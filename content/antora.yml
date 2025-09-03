@@ -1,0 +1,21 @@
+---
+name: modules
+title: OpenShift DR with NetApp ONTAP and Trident
+version: master
+nav:
+  - modules/ROOT/nav.adoc
+
+asciidoc:
+  attributes:
+    lab_name: "Hands-on Disaster Recovery of OpenShift containers and VMs with Trident protect"
+    release-version: master
+    page-pagination: true
+    guid: my-guid
+    ssh_user: devops
+    ssh_password: devops
+    ssh_command: ssh devops@bastion.{guid}.example.opentlc.com
+    page-links:
+    - url: https://redhat.com
+      text: Red Hat
+    - url: https://docs.netapp.com/us-en/trident/
+      text: NetApp Trident documentation

@@ -1,0 +1,209 @@
+# Module 3: Provision workloads
+
+In this chapter, you will perform the following tasks:
+
+* Create a containerized workload with the _cli_
+* Create a Virtual Machine with the OpenShift Console
+
+== OpenShift context management
+
+At this point, you already logged in both ROSA clusters. +
+When using the `oc` tool, you can easily switch between clusters, by using the command `oc config use-context`. +
+
+However, as the context names are pretty long, it is a good practice to rename them with the `oc config rename-context` command to avoid typing errors.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config rename-context $(oc config get-contexts | grep -E default.*api-prod | cut -c 11- | awk '{print $1}') PROD
+oc config rename-context $(oc config get-contexts | grep -E default.*api-dr | cut -c 11- | awk '{print $1}') DR
+----
+
+Let's quickly check this was succesfully applied:
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config get-contexts
+----
+[.console-output]
+[source,bash]
+----
+CURRENT   NAME   CLUSTER                                         AUTHINFO                                                      NAMESPACE
+          DR     api-dr-p4p6h-t9k7-p1-openshiftapps-com:6443     cluster-admin/api-dr-p4p6h-t9k7-p1-openshiftapps-com:6443     default
+*         PROD   api-prod-p4p6h-jtx8-p1-openshiftapps-com:6443   cluster-admin/api-prod-p4p6h-jtx8-p1-openshiftapps-com:6443   default
+----
+
+You should already be logged into the PROD environment, as indicated by the `*` in the first column of the output. +
+In case you need to switch back to it, here is the command to run:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config use-context PROD
+----
+
+Time to deploy workloads!
+
+IMPORTANT: If you are only interested in protecting Virtual Machines, you can skip all the wordpress chapters and move directly to the <<deployvm,next chapter>>.
+
+[#deploywordpress]
+== Deploy the Wordpress Helm chart
+
+This is going to be done using the cli.
+
+=== Wordpress installation
+
+Wordpress is widely known as a blogging and content management platform. +
+Let's deploy it on the production cluster with the help of a Helm chart.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+helm repo add bitnami https://charts.bitnami.com/bitnami
+
+helm install wordpress bitnami/wordpress --version 24.1.18 -n wordpress --create-namespace \
+  --set wordpressUsername=rosa \
+  --set wordpressPassword=Rosa12345 \
+  --set global.storageClass=storage-class-nfs \
+  --set wordpressBlogName="Best Blog Ever"
+----
+
+NOTE: It takes a tiny bit more than a minute for the installation to complete.
+
+=== Verify the installation
+
+Check the content of the `wordpress` namespace.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get -n wordpress svc,po,pvc
+----
+[.console-output]
+[source,bash]
+----
+NAME                                 TYPE           CLUSTER-IP       EXTERNAL-IP                                                               PORT(S)                      AGE
+service/wordpress                    LoadBalancer   172.30.57.162    aa7ccfdb52de24e73867ae11c11bedc0-1849430877.us-east-2.elb.amazonaws.com   80:30087/TCP,443:32446/TCP   10m
+service/wordpress-mariadb            ClusterIP      172.30.248.149   <none>                                                                    3306/TCP                     10m
+service/wordpress-mariadb-headless   ClusterIP      None             <none>                                                                    3306/TCP                     10m
+
+NAME                             READY   STATUS    RESTARTS   AGE
+pod/wordpress-74d5d98bcc-5hnhz   1/1     Running   0          10m
+pod/wordpress-mariadb-0          1/1     Running   0          10m
+
+NAME                                             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS        VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-wordpress-mariadb-0   Bound    pvc-9b53fcd7-09a9-4ce8-9b8e-9b24c22cd3ee   8Gi        RWO            storage-class-nfs   <unset>                 10m
+persistentvolumeclaim/wordpress                  Bound    pvc-774a516b-2205-462f-bf5d-d4014e37c72b   10Gi       RWO            storage-class-nfs   <unset>                 10m
+----
+
+You might have to wait a few more seconds and then repeat the above command until both pods show a staus of "Ready 1/1". 
+
+Notice the wordpress service ? +
+Copy & paste the address (the _EXTERNAL-IP_) provided by the Load Balancer in your browser in order to access WordPress:
+
+image::Mod3_Wordpress_HelloWorld.png[HelloWorld]
+
+[NOTE]
+====
+You could also retrieve this address by running the following command:
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get -n wordpress svc wordpress -o=jsonpath='{.status.loadBalancer.ingress[0].hostname}';echo
+----
+====
+
+=== Create your own blog
+
+Before protecting that application, you may want to create your own blog. +
+You first need to connect to the admin page (use the same URL as Wordpress followed by "/wp-admin"). +
+This will ask for credentials, which you set in the Helm chart (`rosa`/`Rosa12345`).
+
+Once logged in, you need to click on `Posts` in the left bar, and then press on the `Add New Post` button.
+
+image::Mod3_Wordpress_Admin_AddNewPost.png[AddNewPost]
+
+Write Something nice or funny, and when ready press on the two successive `Publish` buttons. +
+In another window, connect to the main page of the Wordpress user site to visualize the result.
+
+image::Mod3_Wordpress_FirstPost.png[FirstPost]
+
+Tadaaaa! +
+Your first application is now ready.
+
+[#deployvm]
+== Deploy a simple VM with a Block RWX volume
+
+For this chapter, most tasks are going to be done in the OpenShift GUI. 
+
+=== Project creation
+
+* Log into the PROD OpenShift console
+** *URL*: {rosa_openshift_console_url}[window=_blank] icon:external-link[]
+** *user*: {rosa_openshift_admin_user}
+** *password*: {rosa_openshift_admin_password}
+
+* Navigate to Home --> Projects and create a new project by using the `Create Project` button on the top right. Name the project `my-vm`
+
+image::Mod3_OCP_Console_Project_Create.png[projectCreation]
+
+=== VM creation
+
+* Navigate to the `VirtualMachines` sub-menu of the `Virtualization` menu (make sure you are on the right project), press `Create `Virtual Machine` and then choose `From template`
+
+image::Mod3_OCP_Console_VM_Create.png[VMCreation]
+
+* Select the `CentOS Stream 9 VM` template. This will open a new form.
+
+image::Mod3_OCP_Console_VM_Centos_template.png[VMTemplate, 220, 220]
+
+[NOTE] 
+====
+As you can see, the template you are selecting is labelled `Source available`. +
+This means that the corresponding image volume exists on this cluster with the default storage class configured for Virtual Machines.
+====
+
+* Leave all the default parameters
+** including _Disk source = Template default_ (that will use the volume snapshot set during the optimization configuration in the previous module)
+** you can optionally change the VM name
+* Press `Quick create VirtualMachine`
+
+image::Mod3_OCP_Console_VM_Form.png[VM Form]
+
+=== Verify the objects related to that VM with the CLI
+
+Check the status of the VM and its disk/PVC volume.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc -n my-vm get dv,vm,pvc
+----
+[.console-output]
+[source,bash]
+----
+NAME                                               PHASE       PROGRESS   RESTARTS   AGE
+datavolume.cdi.kubevirt.io/centos-stream9-boston   Succeeded   100.0%                38s
+
+NAME                                               AGE   STATUS    READY
+virtualmachine.kubevirt.io/centos-stream9-boston   38s   Running   True
+
+NAME                                          STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS          VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/centos-stream9-boston   Bound    pvc-3d6b8ffd-0483-44b5-9b0c-b0a51b528c40   30Gi       RWX            storage-class-iscsi   <unset>                 38s
+----
+As you can see, the creation was super fast. +
+
+NOTE: If the Template Image disk was on a different storage class, the process would have taken much longer (about 10 minutes), as it would first need to copy the data into a different volume. Due to the NetApp ONTAP cloning technology being used in this setup, creation of the VM disk is always fast, independent of the template size. 
+
+* You can also see the status of the VM in the Console:
+
+image::Mod3_OCP_Console_VM_Running.png[VM Running]
+
+* You are now done with this module. Please proceed with the next one.

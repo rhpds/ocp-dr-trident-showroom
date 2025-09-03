@@ -1,0 +1,584 @@
+# Module 2: Install and configure Trident on the DR OpenShift cluster
+
+NOTE: Trident is already installed and configured on the production cluster.
+
+This task is generally done by the OpenShift administrator.
+
+NetApp Trident can be installed in various ways:
+
+* Using a installer binary for heavily customized environments 
+* Using an operator
+* Using a Helm Chart (that installs the operator)
+
+Starting with NetApp Trident 25.02, this CSI driver is also available as a certified operator in the OperatorHub catalog. +
+You will use that method in this lab.
+
+[#operatorinstall]
+== Install the NetApp Trident Operator
+
+* Connect to the Red Hat OpenShift GUI on the *DR* cluster:
+** *URL*: {rosa2_openshift_console_url}[window=_blank] icon:external-link[]
+** *user*: {rosa2_openshift_admin_user}
+** *password*: {rosa2_openshift_admin_password}
+* Locate the *OperatorHub* sub-menu in the *Operators* category
+* Filter on *trident*
+
+image::Mod2_OCP_Console_OperatorHub_Trident.png[OperatorHub]
+
+* Find the Trident box that has the `Certified` badge on the top right and click on it to enter the Installer window
+
+image::Mod2_OCP_Console_OperatorHub_Trident_Install.png[Installer]
+
+* Make sure you are on the most recent version (25.2.1 in the screenshot) and press on the `Install` button which will open the configuration page. Leave all the parameters as they are and press `Install`
+
+image::Mod2_OCP_Console_OperatorHub_Trident_Install2.png[Configuration]
+
+* The installation is fairly quick. Wait until the installation is complete. In less than 2 minutes, the Operator will be ready to use.  
+
+image::Mod2_OCP_Console_OperatorHub_Trident_Installed.png[TridentInstalled]
+
+* After pressing on the `View Operator` button, you will enter the _details_ page of Trident.
+
+image::Mod2_OCP_Console_OperatorHub_Trident_Details.png[TridentDetails]
+
+* Find the `Trident Orchestrator` box and click on the `Create instance` link within it. Creating an instance of the Trident orchestrator will open a new form
+
+image::Mod2_OCP_Console_OperatorHub_TORC_form.png[TridentDetails]
+
+* Switch to `YAML view`, remove the pre-filled YAML manifest and paste the following and press on `Create`
+
+[.lines_space]
+[.console-input]
+[source,yaml,role=execute]
+----
+apiVersion: trident.netapp.io/v1
+kind: TridentOrchestrator
+metadata:
+  name: trident
+  namespace: openshift-operators 
+spec:
+  IPv6: false
+  debug: false
+  nodePrep:
+  - iscsi
+  imageRegistry: ''
+  k8sTimeout: 30
+  namespace: trident
+  silenceAutosupport: false
+----
+
+[TIP]
+====
+* CoreOS does not have iSCSI enabled and configured
+* Trident can configure and enable both iSCSI & Multipath services on all OpenShift worker nodes
+* This is achieved by adding the `nodePrep` parameter
+====
+
+* Observe the Status column. After a couple of minutes, the Trident Orchestrator will be fully installed
+
+image::Mod2_OCP_Console_OperatorHub_TORC_installed.png[TridentDetails]
+
+
+== Verification with the command line
+
+In this section we will go through the following steps:
+
+* Connect to the jumphost
+* Log in to OpenShift CLI
+* Retrieve and verify the Trident version.
+
+=== Authenticate `oc` to the cluster
+
+The bastion provided with the RHDP workshop has the `aws` and `rosa` command line tools already installed and logged in.  The `oc` command is installed, but not authenticated.
+
+To authenticate `oc` use the API URL, username, and password provided by the RHDP lab deployment.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute,subs="attributes"]
+----
+oc login -u {rosa2_openshift_admin_user} -p {rosa2_openshift_admin_password} {rosa2_openshift_api_url}
+----
+
+[#tridentinstalled]
+=== Check the Trident version
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get tver -n trident
+----
+[.console-output]
+[source,bash]
+----
+NAME      VERSION
+trident   25.02.1
+----
+
+=== Verify that all Trident pods are running
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get pods -n trident
+----
+[.console-output]
+[source,bash]
+----
+NAME                                  READY   STATUS    RESTARTS   AGE
+trident-controller-599494bc5f-qnssz   6/6     Running   0          34s
+trident-node-linux-4s6jg              2/2     Running   0          34s
+trident-node-linux-9jx9g              2/2     Running   0          34s
+trident-node-linux-d7b7x              2/2     Running   0          34s
+trident-node-linux-jrv8v              2/2     Running   0          34s
+trident-node-linux-lpcj4              2/2     Running   0          34s
+trident-node-linux-qm8nz              2/2     Running   0          34s
+trident-node-linux-sc2tn              2/2     Running   0          34s
+----
+
+NOTE: Trident consists of a controller component as well as a deamonset to ensure a Trident pod runs on each node and can control local mount/unmount activities for storage. 
+
+
+=== Install the tridentctl tool
+
+NetApp provides the _tridentctl_ tool for easy handling of Trident installation. Installing the _tridentctl_ binary can be useful, especially for troubleshooting.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+wget https://github.com/NetApp/trident/releases/download/v25.02.1/trident-installer-25.02.1.tar.gz
+tar -xf trident-installer-25.02.1.tar.gz
+mkdir /home/rosa/bin
+cp trident-installer/tridentctl /home/rosa/bin
+----
+Verify the installation by viewing the Trident version of the installed operator.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl -n trident version
+----
+[.console-output]
+[source,bash]
+----
++----------------+----------------+
+| SERVER VERSION | CLIENT VERSION |
++----------------+----------------+
+| 25.02.1        | 25.02.1        |
++----------------+----------------+
+----
+
+[#tridentconfiguration]
+== Configure Trident
+
+A *backend* defines the relationship between Trident and a storage system. It tells Trident how to communicate with that storage system and how Trident should provision volumes from it.
+These backends are linked to a *secret* which contains the credentials of the storage system (or a software-defined tenant on that system). Trident can handle multiple storage backends at the same time. 
+
+NOTE: In this lab we will create backends for NFS (file) and iSCSI (block) protocols. Trident also supports various other storage protocols such as NVMe, Fibre Channel and SMB. 
+
+=== Create a secret to store the SVM username and password in the ROSA cluster
+
+[NOTE]
+====
+A *SVM* ("Storage Virtual Machine") is an ONTAP construct which serves data to clients and hosts from one or more volumes, through one or more network logical interfaces (LIFs). It provides secure multi-tenancy on a shared storage platform. When you run multiple OpenShift clusters, you can use this to isolate them from each other at the storage level.
+====
+
+
+The credentials for the storage backend can be created via the OpenShift Console or the GUI. +
+Let's use the cli:
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute,subs="attributes"]
+----
+cat << EOF | oc apply -f -
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dr-backend-fsxn-secret
+  namespace: trident
+type: Opaque
+stringData:
+  username: vsadmin
+  password: {svm_admin_password}
+EOF
+----
+
+Verify the secret has been added to the ROSA cluster.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get secrets -n trident dr-backend-fsxn-secret
+----
+[.console-output]
+[source,bash]
+----
+NAME                        TYPE                                  DATA   AGE
+backend-fsxn-secret         Opaque                                2      24h
+----
+
+=== Create the Trident Backend for NFS
+
+Before creating the backend, you need to retrieve the management IP of the Storage Virtual Machine that is set up in AWS FSxN. We will use the aws CLI to retrieve it.+
+Let's assign it to a variable.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+export SVMIP=$(aws fsx describe-storage-virtual-machines | jq -r '.StorageVirtualMachines[].Endpoints.Management.IpAddresses[]' | grep 10.10) && echo $SVMIP
+----
+
+Run the following commands to create the Trident backend in the ROSA cluster.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+cat << EOF | oc apply -f -
+apiVersion: trident.netapp.io/v1
+kind: TridentBackendConfig
+metadata:
+  name: dr-backend-fsxn-nfs
+  namespace: trident
+spec:
+  version: 1
+  backendName: dr-fsxn-nfs
+  storageDriverName: ontap-nas
+  managementLIF: $SVMIP
+  nasType: nfs
+  storagePrefix: dr       # <1>
+  defaults:
+    snapshotDir: 'true'
+    nameTemplate: "{{ .config.StoragePrefix }}_{{ .volume.Namespace }}_{{ .volume.RequestName }}"  # <2>
+  credentials:
+    name: dr-backend-fsxn-secret
+EOF
+----
+
+Some explanations about the content of that manifest:
+
+<1> `storagePrefix`: all volumes created by Trident will start with those letters
+<2> `nameTemplate`: all volumes created by Trident will follow that naming convention (instead of using the PV UUID)
+
+Verify the backend configuration.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get tridentbackendconfigs dr-backend-fsxn-nfs -n trident
+----
+[.lines_space]
+[.console-output]
+[source,bash]
+----
+NAME                  BACKEND NAME      BACKEND UUID                           PHASE   STATUS
+dr-backend-fsxn-nfs   dr-fsxn-nfs       1f490bf3-492c-4ef7-899e-9e7d8711c82f   Bound   Success
+----
+
+
+=== Create the Trident Backend for iSCSI
+
+The IP from the SVM has already been assigned to a variable in the previous paragraph. +
+You can reuse the same one here, as the same SVM will be used for both protocols
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+cat << EOF | oc apply -f -
+apiVersion: trident.netapp.io/v1
+kind: TridentBackendConfig
+metadata:
+  name: dr-backend-fsxn-iscsi
+  namespace: trident
+spec:
+  version: 1
+  backendName: dr-fsxn-iscsi
+  storageDriverName: ontap-san
+  managementLIF: $SVMIP
+  sanType: iscsi
+  storagePrefix: dr
+  credentials:
+    name: dr-backend-fsxn-secret
+EOF
+----
+
+Verify the backend configuration.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get tridentbackendconfigs dr-backend-fsxn-iscsi -n trident
+----
+[.lines_space]
+[.console-output]
+[source,bash]
+----
+NAME                    BACKEND NAME        BACKEND UUID                           PHASE   STATUS
+dr-backend-fsxn-iscsi   dr-fsxn-iscsi       1f490bf3-492c-4ef7-899e-9e7d8711c82g   Bound   Success
+----
+
+[#storageclasses]
+== Storage Classes
+
+The very last step is about creating storage classes that will use Trident backends. +
+A storage class is necessary to instruct Trident how to provision volumes.  
+
+[NOTE]
+====
+ReadWriteMany (RWX) is required for *_Live Migration_* of your VMs. 
+This access mode is supported with all protocols proposed by Trident (File and Block).  
+
+However, configuring a RWX workload with a block protocol such as iSCSI requires two things:
+
+* the storage class must not specify any filesystem
+* the PVC must explicitly mention `volumeMode: Block`
+====
+
+You are going to create 2 storage classes:
+
+* `storage-class-nfs`: File workloads, supports all ROSA access modes
+* `storage-class-iscsi`: Block workloads, also supports all access modes
+
+=== Create a NFS Storage Class
+
+Run the following command to create the first storage class in the ROSA cluster. +
+This will be done via the lab console.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+cat << EOF | oc apply -f -
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: storage-class-nfs
+provisioner: csi.trident.netapp.io
+parameters:
+  backendType: "ontap-nas"
+  nasType: "nfs"
+allowVolumeExpansion: true
+EOF
+----
+
+Verify the storage class creation.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get sc storage-class-nfs
+----
+[.lines_space]
+[.console-output]
+[source,bash]
+----
+NAME                      PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+storage-class-nfs         csi.trident.netapp.io   Delete          Immediate              true                   10s
+----
+
+
+=== Create an iSCSI Storage Class
+
+This will be done with the OpenShift Console. +
+Once connected to the GUI, navigate to the `Storage` menu and `StorageClasses` sub-menu. +
+
+You can easily create a new one by pressing on the `Create StorageClass` button at the top right of the screen. +
+Once on this page, switch to edit mode by clicking on the `Edit YAML` link. Remove the pre-filled YAML manifest and paste the following, then click `Create`
+[.lines_space]
+[.console-input]
+[source,yaml,role=execute]
+----
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: storage-class-iscsi
+  annotations:
+    storageclass.kubevirt.io/is-default-virt-class: 'true' # <1>
+provisioner: csi.trident.netapp.io
+parameters:
+  backendType: "ontap-san"
+  sanType: "iscsi"
+mountOptions:
+   - discard
+allowVolumeExpansion: true
+----
+
+[TIP]
+====
+<1> Set this annotation to default the storage class for VMs to NetApp, as sometimes you don't explicitly have a choice to select a storage class.
+====
+
+image::Mod2_OCP_Console_Storage_Classes_Create.png[storageclasses]
+
+Switch back to CLI and verify the storage class creation.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get sc storage-class-iscsi
+----
+[.console-output]
+[source,bash]
+----
+NAME                   PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+storage-class-iscsi    csi.trident.netapp.io   Delete          Immediate              true                   10s
+----
+
+This is also visible in the OpenShift Console:
+
+image::Mod2_OCP_Console_Storage_Classes.png[storageclasses]
+
+[#vsclass]
+== Volume Snapshot Class
+
+By default, there is already a Volume Snapshot Class configured for AWS EBS volumes. +
+In order to integrate the superior snapshot capabilties of the Ontap storage and allow Trident Protect to use snapshots as a step in the backup process, you also need to create a Volume Snapshot Class that is linked to the Trident driver:
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+cat << EOF | kubectl apply -f -
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+metadata:
+  name: csi-trident-vsc
+driver: csi.trident.netapp.io
+deletionPolicy: Delete
+EOF
+----
+
+You can now verify you have 2 classes available:
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get vsclass
+----
+[.console-output]
+[source,bash]
+----
+NAME              DRIVER                  DELETIONPOLICY   AGE
+csi-aws-vsc       ebs.csi.aws.com         Delete           2d5h
+csi-trident-vsc   csi.trident.netapp.io   Delete           62s
+----
+
+[#optimization]
+== Virtual Machine Images optimization
+
+The lab was initially setup with `AWS EBS` as a default storage class (type `GP3`). +
+OpenShift automatically created Virtual Machines images on a KubeVirt api called `datavolume` on top of that storage class.
+
+[NOTE]
+====
+A DataVolume is a custom resource provided by the Containerized Data Importer (CDI) project. +
+KubeVirt integrates with CDI in order to provide users a workflow for dynamically creating PVCs and importing data into those PVCs.
+====
+
+You can see them with the following command:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get dv,volumesnapshot,pvc -n openshift-virtualization-os-images --selector=cdi.kubevirt.io/dataImportCron
+----
+[.console-output]
+[source,bash]
+----
+NAME                                                     PHASE       PROGRESS   RESTARTS   AGE
+datavolume.cdi.kubevirt.io/centos-stream9-1920d484672d   Succeeded   100.0%                10h
+datavolume.cdi.kubevirt.io/fedora-4fcda30051d5           Succeeded   100.0%                10h
+datavolume.cdi.kubevirt.io/rhel10-beta-da1c0cdc24da      Succeeded   100.0%                10h
+datavolume.cdi.kubevirt.io/rhel8-833d0f124287            Succeeded   100.0%                10h
+datavolume.cdi.kubevirt.io/rhel9-0c9204ba64c2            Succeeded   100.0%                10h
+
+NAME                                                STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/centos-stream9-1920d484672d   Bound    pvc-97787e44-3e19-4bd0-be51-16a0bd2a6f79   30Gi       RWO            gp3            <unset>                 10h
+persistentvolumeclaim/fedora-4fcda30051d5           Bound    pvc-f403b3cd-6247-4839-8b58-ff23aac1a8da   30Gi       RWO            gp3            <unset>                 10h
+persistentvolumeclaim/rhel10-beta-da1c0cdc24da      Bound    pvc-042c4b71-b91c-4936-985e-9bd266938c98   30Gi       RWO            gp3            <unset>                 10h
+persistentvolumeclaim/rhel8-833d0f124287            Bound    pvc-96250ddf-3a1c-4814-851c-275035dd9548   30Gi       RWO            gp3            <unset>                 10h
+persistentvolumeclaim/rhel9-0c9204ba64c2            Bound    pvc-5d10c854-bf26-44eb-b261-356721e785ec   30Gi       RWO            gp3            <unset>                 10h
+----
+
+You defined earlier AWS FSx as the default storage class for Virtual Machines. +
+You can also verify this by running the following. You should get `storage-class-iscsi` as a result.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get storageclass -o=jsonpath='{.items[?(@.metadata.annotations.storageclass\.kubevirt\.io/is-default-virt-class=="true")].metadata.name}';echo
+----
+[.console-output]
+[source,bash]
+----
+storage-class-iscsi
+----
+
+If you tried to create a VM from a template, you would not see one with the label `Source available`, simply because the data sits on AWS EBS +
+To reach your goal, you would need to clone the existing PVC, so that the VM disk ends up on the right storage class. +
+This process takes roughly 10 minutes. +
+
+In order for the VM creation process to be much faster (a few seconds), you first need to rebuild the source images so they are stored on the more powerful Ontap storage. +
+To do so, you can just delete the existing datavolumes. OpenShift will automatically recreate what you need with the new default storage class you created earlier.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc delete dv,volumesnapshot -n openshift-virtualization-os-images --selector=cdi.kubevirt.io/dataImportCron
+----
+You can immediately see new datavolumes appearing to import data, and ultimately setting volume snapshots.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get dv -n openshift-virtualization-os-images
+----
+[.console-output]
+[source,bash]
+----
+NAME                                                     PHASE             PROGRESS   RESTARTS   AGE
+datavolume.cdi.kubevirt.io/centos-stream9-1920d484672d   Pending           N/A                   5s
+datavolume.cdi.kubevirt.io/fedora-4fcda30051d5           ImportScheduled   N/A                   5s
+datavolume.cdi.kubevirt.io/rhel10-beta-da1c0cdc24da      Pending           N/A                   5s
+datavolume.cdi.kubevirt.io/rhel8-833d0f124287                              N/A                   5s
+datavolume.cdi.kubevirt.io/rhel9-0c9204ba64c2                              N/A                   5s
+----
+Give it a couple of minutes and run the command again:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get dv,pvc,volumesnapshot -n openshift-virtualization-os-images
+----
+[.console-output]
+[source,bash]
+----
+NAME                                                                 READYTOUSE   SOURCEPVC                     SOURCESNAPSHOTCONTENT   RESTORESIZE   SNAPSHOTCLASS     SNAPSHOTCONTENT                                    CREATIONTIME   AGE
+volumesnapshot.snapshot.storage.k8s.io/centos-stream9-1920d484672d   true         centos-stream9-1920d484672d                           30Gi          csi-trident-vsc   snapcontent-3e78ca37-c394-4323-a9e1-b9d955838e4e   16s            17s
+volumesnapshot.snapshot.storage.k8s.io/fedora-4fcda30051d5           true         fedora-4fcda30051d5                                   30Gi          csi-trident-vsc   snapcontent-2589ee80-d92b-4845-8242-61aec00f7fd1   43s            44s
+volumesnapshot.snapshot.storage.k8s.io/rhel10-beta-da1c0cdc24da      true         rhel10-beta-da1c0cdc24da                              30Gi          csi-trident-vsc   snapcontent-0a7b5dac-8406-4dba-91c1-a0d904a60050   14s            14s
+volumesnapshot.snapshot.storage.k8s.io/rhel8-833d0f124287            true         rhel8-833d0f124287                                    30Gi          csi-trident-vsc   snapcontent-429a77dc-a882-495d-b5f9-50183f8bcec1   4s             4s
+volumesnapshot.snapshot.storage.k8s.io/rhel9-0c9204ba64c2            true         rhel9-0c9204ba64c2                                    30Gi          csi-trident-vsc   snapcontent-48a33cbe-687e-4bcd-991b-9182ec0e12fa   23s            23s
+----
+
+NOTE: Notice that the datavolume resources are automatically cleaned up after the import is complete. Instead you now see volume snapshots that were created against the Trident class. Any subsequent VM creation from these templates/snapshots will now use NetApp cloning technology to give you extremely fast and efficient provisioning of VM disks.
+
+This optimization configuration also needs to be applied to the production environment. +
+You will also first need to log into that PROD cluster.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute,subs="attributes"]
+----
+oc login -u {rosa_openshift_admin_user} -p {rosa_openshift_admin_password} {rosa_openshift_api_url}
+oc delete dv,volumesnapshot -n openshift-virtualization-os-images --selector=cdi.kubevirt.io/dataImportCron
+----
+
+In the next chapter, you will see the benefit of the configuration you just ran.
+
+You are now done with this module. Please proceed with the next one.

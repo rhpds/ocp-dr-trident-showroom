@@ -1,0 +1,407 @@
+# Module 5: Backup/Restore container workloads
+
+Trident Protect can help you protect *applications*.
+
+Now, what *_IS_* an application? How do you *_DEFINE_* it? +
+Very philosophical questions, isn't it?
+
+10 people may have 10 different answers. 
+
+With Trident Protect you get full flexibility and can define applications in multiple ways:
+
+* with *labels* (ie subset of a namespace)
+* a whole *namespace* (ie everything in it)
+* multiple namespaces at once
+
+NOTE: You can also bring cluster wide resources in the Application definition.
+
+Here are two examples with the Wordpress environment you have deployed: 
+
+* Application by namespace: everything in the namespace will be protected as one (PVC, POD, ConfigMaps, ...). This is the most common option.
+* Application by label: you could protect the frontend & the backend differently, maybe with different schedules.
+
+[NOTE]
+====
+In some cases, you may need to interact with the application to ensure consistency. +
+True that not all applications write their data on the disk all the time. Maybe there is a cache or a buffer involved. +
+Trident Protect uses *hooks* to perform some tasks, such as requesting data flush before taking a snapshot.
+====
+
+Enough reading for now, let's protect WordPress!
+
+[#creation]
+== Create a Trident Protect application for the Wordpress namespace
+
+Make sure you are logged into the production cluster: +
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config use-context PROD
+----
+
+Defining an application can be done with the _tridentctl-protect_ cli or via CR (more adapted for GitOps methodologies). In this case we will again use the  _tridentctl-protect_ cli:
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect create app wordpress --namespaces wordpress -n wordpress
+----
+TIP: Running this command with the `--dry-run` parameter will display the corresponding YAML manifest for integration in GitOps such as ArgoCD.
+
+[NOTE]
+====
+* The _application_ is created by the app owner (ie the Wordpress admin)
+* It is also created in the application namespace, ie if the whole namespace is deleted, the Trident Protect objects will be deleted also. But thanks to the AppVault & backups, you can easily restore everything
+* The `--namespaces` parameter is used to define which _namespaces_ to protect (`wordpress` in your case), as well as _labels_ if necessary
+====
+
+Check that the application is present:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get app -n wordpress
+----
+[.console-output]
+[source,bash]
+----
++-----------+------------+-------+-----+
+|   NAME    | NAMESPACES | STATE | AGE |
++-----------+------------+-------+-----+
+| wordpress | wordpress  | Ready | 26s |
++-----------+------------+-------+-----+
+----
+
+[#snapshot]
+== Create an application snapshot of your application
+
+An application snapshot is composed of several steps:
+
+* Pre snapshot hook (optional) to interact with your application (ex: Freeze the MariaDB database to flush the data on the disk)
+* *CSI Snapshot* for each volume of the application
+* Copy of all the *application metadata* onto the AppVault
+* Post snapshot hook (optional) to interact with your application (ex: Thaw the MariaDB database)
+
+[NOTE]
+====
+Hooks are not covered here in this lab. +
+You can find examples on this repo: https://github.com/NetApp/Verda[window=_blank]
+====
+
+Let's create one snapshot of the Wordpress app:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect create snapshot wpsnap1 --app wordpress --appvault lab-vault -n wordpress
+----
+Check that the snapshot is done. Wait and repeat until the State is `Completed`:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get snap -n wordpress
+----
+[.console-output]
+[source,bash]
+----
++---------+-----------+----------------+-----------+-------+-------+
+|  NAME   |    APP    | RECLAIM POLICY |   STATE   | ERROR |  AGE  |
++---------+-----------+----------------+-----------+-------+-------+
+| wpsnap1 | wordpress | Delete         | Completed |       |  11s  |
++---------+-----------+----------------+-----------+-------+-------+
+----
+
+As Wordpress has 2 PVC configured, you will find 2 associated CSI Volume Snapshots:
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get -n wordpress vs
+----
+[.console-output]
+[source,bash]
+----
+NAME                                                                                     READYTOUSE   SOURCEPVC                  SOURCESNAPSHOTCONTENT   RESTORESIZE   SNAPSHOTCLASS     SNAPSHOTCONTENT                                    CREATIONTIME   AGE
+snapshot-29a85194-428f-4e16-855a-c5ab9f849e3a-pvc-94cc256d-5764-4917-81d9-d4c5cf63f0fc   true         data-wordpress-mariadb-0                           170280Ki      csi-trident-vsc   snapcontent-d1b45c23-6df7-4842-b357-8dc1ac51dfc6   38s            40s
+snapshot-29a85194-428f-4e16-855a-c5ab9f849e3a-pvc-d527a991-4ba3-405a-b533-c22b23d09596   true         wordpress                                          16552Ki       csi-trident-vsc   snapcontent-bec038bf-5d2a-4ea4-8004-5d14089c2a08   40s            40s
+----
+
+[#backup]
+== Create an application backup of your application
+
+A application backup is pretty similar to a snapshot. +
+The main difference being that data is also going to be copied to the object store, making it a true backup where data is stored on a different physical system. +
+A backup is always based on a snapshot. If you don't specify one, Trident Protect will automatically create one for you. +
+You can also optionally use hooks in this process (`pre-backup-hook` & `post-backup-hook`).
+
+Let's create one backup of the Wordpress app, based on the snapshot you just took:
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect create backup wpbkp1 --app wordpress --snapshot wpsnap1 --appvault lab-vault -n wordpress
+----
+Check that the backup is done. Wait and repeat until the State is `Completed`:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get backup -n wordpress
+----
+[.console-output]
+[source,bash]
+----
++--------+-----------+----------------+-----------+-------+-------+
+|  NAME  |    APP    | RECLAIM POLICY |   STATE   | ERROR |  AGE  |
++--------+-----------+----------------+-----------+-------+-------+
+| wpbkp1 | wordpress | Retain         | Completed |       | 1m15s |
++--------+-----------+----------------+-----------+-------+-------+
+----
+
+NOTE: It is expected for the backup to take more time than the snapshot, as data is also copied to the object store
+
+While you wait for the backup to succeed, you can also verify that some content is getting created in the bucket. +
+First, you can notice that Trident Protect created some sub-folders to copy the app metadata as well as the data:
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute,subs="attributes"]
+----
+BUCKETFOLDERS=$(oc -n wordpress get backup wpbkp1 -o=jsonpath='{.status.appArchivePath}' | awk -F '/' '{print $1}')
+aws s3 ls --no-verify-ssl --endpoint-url http://s3.us-east-2.amazonaws.com s3://{s3_bucket_name}/$BUCKETFOLDERS/
+----
+[.console-output]
+[source,bash]
+----
+      PRE backups/    # <1>
+      PRE kopia/      # <2>
+      PRE snapshots/  # <3>
+----
+<1> The _backups_ folder contains the app metadata related to Trident Protect backups
+<2> the _kopia_ folder contains the data when running Trident Protect backups
+<3> The _snapshots_ folder contains the app metadata related to Trident Protect snapshots
+
+Then, you can also parse the content of the backup:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute,subs="attributes"]
+----
+BKPPATH=$(oc -n wordpress get backup wpbkp1 -o=jsonpath='{.status.appArchivePath}')
+aws s3 ls --no-verify-ssl --endpoint-url http://s3.us-east-2.amazonaws.com s3://{s3_bucket_name}/$BKPPATH --recursive --summarize --human-readable
+----
+
+[#schedule]
+== Create an protection schedule for your application
+
+Manually creating snapshots and backups is one thing...  +
+Automating their creation is another one.
+
+The best would be to create protection schedules! +
+The _tridentctl-protect_ tool can be used for this, however this time you are going to use a YAML manifest in the lab command line. +
+
+NOTE: like the _application_, _snapshot_ and _backup_, the _schedule_ must be created in the application project (ie _wordpress_ namespace)
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+cat << EOF | oc apply -f -
+apiVersion: protect.trident.netapp.io/v1
+kind: Schedule
+metadata:
+  name: wpsched1
+  namespace: wordpress
+spec:
+  appVaultRef: lab-vault
+  applicationRef: wordpress
+  backupRetention: "3"
+  dataMover: Kopia
+  enabled: true
+  granularity: Custom
+  recurrenceRule: |-
+    DTSTART:20250326T000200Z
+    RRULE:FREQ=MINUTELY;INTERVAL=5
+  snapshotRetention: "3"
+EOF
+----
+
+Even though the schedule was created via a YAML manifest, we can still check it via the _tridentctl-protect_ tool:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get schedule -n wordpress
+----
+[.console-output]
+[source,bash]
+----
++-------------+-----------+--------------------------------+---------+-------+-------+-----+
+|    NAME     |    APP    |            SCHEDULE            | ENABLED | STATE | ERROR | AGE |
++-------------+-----------+--------------------------------+---------+-------+-------+-----+
+|   wpsched1  | wordpress | DTSTART:20250326T000100Z       | true    |       |       | 11s |
+|             |           | RRULE:FREQ=MINUTELY;INTERVAL=5 |         |       |       |     |
++-------------+-----------+--------------------------------+---------+-------+-------+-----+
+----
+After a few minutes, you are going to see new snapshots and backups appearing with the following command.
+
+NOTE: No need to wait, you can always come back to this later, granted you will check that part in the Bonus module.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get snapshot -n wordpress
+tridentctl-protect get backup -n wordpress
+----
+[.console-output]
+[source,bash]
+----
++-----------------------------+-----------+----------------+-----------+-------+--------+
+|            NAME             |    APP    | RECLAIM POLICY |   STATE   | ERROR |  AGE   |
++-----------------------------+-----------+----------------+-----------+-------+--------+
+| custom-042be-20250407084700 | wordpress | Delete         | Completed |       | 2m36s  |
+| wpsnap1                     | wordpress | Delete         | Completed |       | 11m34s |
++-----------------------------+-----------+----------------+-----------+-------+--------+
++-----------------------------+-----------+----------------+-----------+-------+--------+
+|            NAME             |    APP    | RECLAIM POLICY |   STATE   | ERROR |  AGE   |
++-----------------------------+-----------+----------------+-----------+-------+--------+
+| custom-042be-20250407084700 | wordpress | Retain         | Completed |       | 2m36s  |
+| wpbkp1                      | wordpress | Retain         | Completed |       | 10m56s |
++-----------------------------+-----------+----------------+-----------+-------+--------+
+----
+
+[#restore]
+== Restore your application
+
+While protection is done for the whole application, restoring an application offers multiple choices: 
+
+* You can perform a *complete restore* or a *partial restore*
+* You can restore your application *in-place* or in a *different namespace* (same cluster or a different cluster)
+* You can even tailor the restore with a *post-restore hook*
+
+Let's perform a full restore on the *DR* cluster! 
+
+First step, make sure you are connected on the DR context:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config use-context DR
+----
+
+You first need to find out the full path of your backup in the bucket. +
+From the command line, run the 2 following commands to browse the AppVault:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get appvaultcontent lab-vault --app wordpress --show-resources all -n trident-protect
+tridentctl-protect get appvaultcontent lab-vault --app wordpress --show-resources backup --show-paths -n trident-protect
+----
+[.console-output]
+[source,bash]
+----
++---------+-----------+----------+-----------------------------+-----------+---------------------------+
+| CLUSTER |    APP    |   TYPE   |            NAME             | NAMESPACE |         TIMESTAMP         |
++---------+-----------+----------+-----------------------------+-----------+---------------------------+
+| prod    | wordpress | snapshot | wpsnap1                     | wordpress | 2025-03-26 07:23:30 (UTC) |
+| prod    | wordpress | snapshot | custom-64aea-20250106073100 | wordpress | 2025-03-26 07:31:10 (UTC) |
+| prod    | wordpress | backup   | wpbkp1                      | wordpress | 2025-03-26 07:26:23 (UTC) |
+| prod    | wordpress | backup   | custom-64aea-20250106073100 | wordpress | 2025-03-26 07:32:29 (UTC) |
++---------+-----------+----------+-----------------------------+-----------+---------------------------+
+
++---------+-----------+--------+-----------------------------+-----------+---------------------------+--------------------------------------------------------------------------------------------------------------------+
+| CLUSTER |    APP    |  TYPE  |            NAME             | NAMESPACE |         TIMESTAMP         |                                                        PATH                                                        |
++---------+-----------+--------+-----------------------------+-----------+---------------------------+--------------------------------------------------------------------------------------------------------------------+
+| prod    | wordpress | backup | bboxbkp1                    | wordpress | 2025-01-06 07:26:23 (UTC) | bbox_c72389d7-813e-4ec4-ab1b-ebe002c53599/backups/bboxbkp1_b72088d5-65c3-45b3-a690-3dee53daa841                    |
+| prod    | wordpress | backup | custom-64aea-20250106073100 | wordpress | 2025-01-06 07:32:29 (UTC) | bbox_c72389d7-813e-4ec4-ab1b-ebe002c53599/backups/custom-64aea-20250106073100_3c64a456-60df-4042-aa53-d3b67139467e |
++---------+-----------+--------+-----------------------------+-----------+---------------------------+--------------------------------------------------------------------------------------------------------------------+
+----
+
+The second command provides the path to the backup in the last column. Now that you have the full path of your backup, you can easily restore it on the DR cluster.
+
+Let's put the path of the manual backup in a variable and proceed with the restore
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+BKPPATH=$(tridentctl-protect get appvaultcontent lab-vault --app wordpress --show-resources backup --show-paths -n trident-protect | grep wpbkp1  | awk -F '|' '{print $8}')
+
+tridentctl-protect create br wpbr1 --namespace-mapping wordpress:wordpressrestore --appvault lab-vault -n wordpressrestore \
+  --storageclass-mapping storage-class-nfs:storage-class-iscsi \
+  --path $BKPPATH
+----
+After a couple of minutes, the process should be done:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get br -n wordpressrestore
+----
+[.console-output]
+[source,bash]
+----
++-------+-----------+-----------+-------+------+
+| NAME  | APPVAULT  |   STATE   | ERROR | AGE  |
++-------+-----------+-----------+-------+------+
+| wpbr1 | lab-vault | Completed |       | 1m8s |
++-------+-----------+-----------+-------+------+
+----
+
+[NOTE]
+====
+* `br` stands for BackupRestore
+* The _wordpressrestore_ namespace was automatically created by the tridentctl-protect binary
+* This is also a good way to change storage class, and even protocol, as long as the access mode is supported by the target. Note that the restore command switches from a NFS storage class to a iSCSI class to show that capability.
+====
+
+== Verify the result
+
+First, check the content of the target namespace in the CLI:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get -n wordpressrestore svc,po,pvc
+----
+[.console-output]
+[source,bash]
+----
+NAME                                 TYPE           CLUSTER-IP       EXTERNAL-IP                                                               PORT(S)                      AGE
+service/wordpress                    LoadBalancer   172.30.51.27     a77ae9dd96eb14d2b9dc8083eb104515-1956388544.us-east-2.elb.amazonaws.com   80:32365/TCP,443:30840/TCP   87s
+service/wordpress-mariadb            ClusterIP      172.30.197.232   <none>                                                                    3306/TCP                     87s
+service/wordpress-mariadb-headless   ClusterIP      None             <none>                                                                    3306/TCP                     87s
+
+NAME                             READY   STATUS    RESTARTS   AGE
+pod/wordpress-64f8c88c45-q9bsc   1/1     Running   0          87s
+pod/wordpress-mariadb-0          1/1     Running   0          87s
+
+NAME                                             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS        VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-wordpress-mariadb-0   Bound    pvc-ab5c1211-41fe-4a09-99e0-794e91e36b16   8Gi        RWO            storage-class-nfs   <unset>                 95s
+persistentvolumeclaim/wordpress                  Bound    pvc-f7209500-dba6-4429-9d7b-47a54f991f8b   10Gi       RWO            storage-class-nfs   <unset>                 95s
+----
+As expected, the Load Balancer provided a new address (_EXTERNAL-IP_) for the wordpress service. After all, we restored to a completely different ROSA cluster in a different VPC. +
+Copy and paste it in your browser and check the content of the blog.
+
+[NOTE]
+====
+You could also retrieve this address by running the following command:
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get -n wordpressrestore svc wordpress -o=jsonpath='{.status.loadBalancer.ingress[0].hostname}';echo
+----
+====
+
+Tadaaaaa! Your great blog is back online! +
+You just managed to restore your whole application including its data onto a different cluster.
+
+You are now done with this module. Please proceed with the next one.

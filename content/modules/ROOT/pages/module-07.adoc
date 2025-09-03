@@ -1,0 +1,361 @@
+# Module 7: Bonus
+
+This is added as a bonus module, if you still have time and would like to explore Trident protect capabilities a bit more.
+
+
+[#vmrestore]
+== Restore a Virtual Machine from a snapshot
+
+As a reminder, while protection is done for the whole application, restoring it with Trident Product can be done in many ways: 
+
+* You can perform a *complete restore* or a *partial restore*
+* You can restore your application *in-place* or in a *different namespace* (same cluster or a different cluster)
+* You can even tailor the restore with a *post-restore hook*
+
+For the sake of time, you will restore the VM from the snapshot _vmsnap1_ you took in the previous module. Due to the NetApp snapshot technology, this is a very fast operation. +
+Restoring from a backup would take a bit more than 30 minutes...
+
+Restoring from a snapshot can be done _in-place_ or in _a different namespace within the same cluster_. +
+You are going to perform the latter one. Also, make sure you are connected to the PROD cluster:
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config use-context PROD
+tridentctl-protect create sr vmsr1 --namespace-mapping my-vm:my-vm-restore --snapshot my-vm/vmsnap1 -n my-vm-restore
+----
+NOTE: "sr" stands for `SnapshotRestore`
+
+Check that the process is running: 
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get sr -n my-vm-restore
+----
+[.console-output]
+[source,bash]
+----
++-------+-----------+---------+-------+-----+
+| NAME  | APPVAULT  |  STATE  | ERROR | AGE |
++-------+-----------+---------+-------+-----+
+| vmsr1 | lab-vault | Running |       | 16s |
++-------+-----------+---------+-------+-----+
+----
+After a short time, the process should be done:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get sr -n my-vm-restore
+----
+[.console-output]
+[source,bash]
+----
++-------+-----------+-----------+-------+-----+
+| NAME  | APPVAULT  |   STATE   | ERROR | AGE |
++-------+-----------+-----------+-------+-----+
+| vmsr1 | lab-vault | Completed |       | 44s |
++-------+-----------+-----------+-------+-----+
+----
+Let's first verify the content of the target namespace (_my-vm-restore_):
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get -n my-vm-restore all,pvc
+----
+[.console-output]
+[source,bash]
+----
+Warning: apps.openshift.io/v1 DeploymentConfig is deprecated in v4.14+, unavailable in v4.10000+
+Warning: kubevirt.io/v1 VirtualMachineInstancePresets is now deprecated and will be removed in v2.
+NAME                                                      READY   STATUS    RESTARTS   AGE
+pod/virt-launcher-centos-stream9-sapphire-mink-40-82nfm   1/1     Running   0          29s
+
+NAME               TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)    AGE
+service/headless   ClusterIP   None         <none>        5434/TCP   29s
+
+NAME                                                         PHASE       PROGRESS   RESTARTS   AGE
+datavolume.cdi.kubevirt.io/centos-stream9-sapphire-mink-40   Succeeded   N/A                   29s
+
+NAME                                                                 AGE   PHASE     IP             NODENAME                                   READY
+virtualmachineinstance.kubevirt.io/centos-stream9-sapphire-mink-40   29s   Running   10.131.0.171   ip-10-0-3-229.us-east-2.compute.internal   True
+
+NAME                                                         AGE   STATUS    READY
+virtualmachine.kubevirt.io/centos-stream9-sapphire-mink-40   29s   Running   True
+
+NAME                                                    STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS          VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/centos-stream9-sapphire-mink-40   Bound    pvc-1aa241da-ad1f-44e6-a48b-1f262ff66cd1   30Gi       RWX            storage-class-iscsi   <unset>                 36s
+----
+Everything seems to be in order! +
+Last, let's use the OpenShift console to connect to the VM
+
+* Navigate to the `VirtualMachines` sub-menu of the `Virtualization` menu (make sure you select the `my-vm-restore` project ), and check the list of VM:
+
+image::Mod7_OCP_Console_VM_List.png[VM List]
+
+* Enter the VM page and press on the _Open web console_ link
+
+image::Mod7_OCP_Console_VM_Details.png[VM Details]
+
+* After pressing on the `Guest login credentials`, copy and paste the user name and password, then click on the VM console
+
+* You can then check the content you created earlier:
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+ls; more *
+----
+[.console-output]
+[source,bash]
+----
+myfile.txt
+this is my file
+----
+
+And voilà ! You have quickly demonstrated how to restore a VM from a snapshot in just a few seconds.
+
+[#vmadd]
+== Replicate a second VM
+
+In this chapter, you are going to perform 2 tasks:
+
+* Add a new VM to existing `my-vm` project
+* Failover the Trident Protect app
+
+The goal is to showcase that since the app is defined at the namespace level, any addition to that project will also be automatically replicated to the DR cluster.
+
+=== Add a second VM on the PROD cluster
+
+First, make sure you are connected to the PROD cluster console, in the `my-vm` project. Then you can:
+
+* either create a whole new Centos9 VM, following the same steps used in Module03
+* or clone the existing VM which also would take a couple of minutes to complete
+
+[NOTE]
+====
+To clone the VM, following those steps:
+
+* in the VM window, click on the `Actions` menu (top/right of the screen)
+* select `clone`
+* optionally change the name
+* select `Start VirtualMachine once created`
+====
+
+Trident Protect will automatically synchronize the new content of the project with the AMR configured previously. Wait a few minutes for the cloned VM to be fully deployed and for the next data synchronization to complete. 
+
+=== Failover the namespace with 2 VM
+
+Let's failover once again your app, and check the result.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config use-context DR
+oc patch amr vmamr1 -n vmdr --type=merge -p '{"spec":{"desiredState":"Promoted"}}'
+----
+Fairly quickly, you should get to the following status (`Promoting` followed by `Promoted`)
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get amr -n vmdr
+----
+[.console-output]
+[source,bash]
+----
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+|   NAME   |  SOURCE APP  | DESTINATION APP | DESIRED STATE |    STATE    |  AGE  | ERROR |
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+|  vmamr1  |  lab-vault   |    lab-vault    |   Promoted    |   Promoted  |  20s  |       |
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+----
+Now that the process is done, let's check the content of our namespace:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get -n vmdr vm,pvc
+----
+[.console-output]
+[source,bash]
+----
+NAME                                                            AGE   STATUS    READY
+virtualmachine.kubevirt.io/centos-stream9-boston                35s   Running   True
+virtualmachine.kubevirt.io/centos-stream9-boston-clone-2oohsv   35s   Running   True
+
+NAME                                                                          STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS          VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/centos-stream9-boston                                   Bound    pvc-68178d10-557a-4633-a194-44d34f166cdf   30Gi       RWX            storage-class-iscsi   <unset>                 31m
+persistentvolumeclaim/restore-e1cae597-3e5d-414c-be68-8e9bdbe8faf6-rootdisk   Bound    pvc-e5544494-2b85-4504-9bce-531ede45a1fb   30Gi       RWX            storage-class-iscsi   <unset>                 9m48s
+----
+
+You can see your two Virtual Machines! +
+If you go back to the OpenShift console, you will also see both of them:
+
+image::Mod7_OCP_Console_DR_2VMs.png[two VMs]
+
+[#wordpress]
+== Disaster Recovery for your Wordpress application
+
+You can follow here the same methodology you applied in the _Module-06_ for the Virtual Machine.
+
+=== Setup the mirroring
+
+You first need to retrieve the application ID on the PROD cluster using the command line. +
+We will use the _oc config_ command line to switch between clusters context.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config use-context PROD
+SRCAPPID=$(tridentctl-protect get app wordpress -n wordpress -o json | jq -r .metadata.uid) && echo $SRCAPPID
+----
+
+With that information, you can create the mirror relationship on the DR cluster. +
+
+Let's first switch context to point to the DR cluster:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config use-context DR
+----
+
+As we use a YAML manifest, you also need to create the target namespace on the DR cluster.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc create ns wordpressdr
+
+cat << EOF | oc apply -f -
+apiVersion: protect.trident.netapp.io/v1
+kind: AppMirrorRelationship
+metadata:
+  name: wpamr1
+  namespace: wordpressdr
+spec:
+  desiredState: Established
+  destinationAppVaultRef: lab-vault
+  namespaceMapping:
+  - destination: wordpressdr
+    source: wordpress
+  recurrenceRule: |-
+    DTSTART:20240901T000200Z
+    RRULE:FREQ=MINUTELY;INTERVAL=5
+  sourceAppVaultRef: lab-vault
+  sourceApplicationName: wordpress
+  sourceApplicationUID: $SRCAPPID
+  storageClassName: storage-class-nfs
+EOF
+----
+Let's check the status of this new object on the DR cluster:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get amr -n wordpressdr
+----
+[.console-output]
+[source,bash]
+----
++----------+--------------+-----------------+---------------+--------------+-----+-------+
+|   NAME   |  SOURCE APP  | DESTINATION APP | DESIRED STATE |     STATE    | AGE | ERROR |
++----------+--------------+-----------------+---------------+--------------+-----+-------+
+|  wpamr1  |  lab-vault   |    lab-vault    | Established   | Establishing | 41s |       |
++----------+--------------+-----------------+---------------+--------------+-----+-------+
+----
+It will take a couple of minutes for the mirroring to be setup, or `Established` in the Trident language.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get amr -n wordpressdr
+----
+[.console-output]
+[source,bash]
+----
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+|   NAME   |  SOURCE APP  | DESTINATION APP | DESIRED STATE |    STATE    |  AGE  | ERROR |
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+|  wpamr1  |  lab-vault   |    lab-vault    | Established   | Established |  1m30 |       |
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+----
+Let's verify what we currently have in the target namespace:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get -n wordpressdr svc,po,pvc
+----
+[.console-output]
+[source,bash]
+----
+NAME                                             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS        VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-wordpress-mariadb-0   Bound    pvc-1fc62930-31da-4d2d-92ca-4449fe13211c   8Gi        RWO            storage-class-nfs   <unset>                 2m35s
+persistentvolumeclaim/wordpress                  Bound    pvc-29440095-169e-4524-94f7-e45e03e1e2d6   10Gi       RWO            storage-class-nfs   <unset>                 2m35s
+----
+As expected, you only see the PVC for now.
+
+=== Failover your application
+
+Failover your application is pretty straight forward. +
+You just need to _patch_ the AMR on the DR cluster.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc patch amr wpamr1 -n wordpressdr --type=merge -p '{"spec":{"desiredState":"Promoted"}}'
+----
+Fairly quickly, you should get to the following result:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get amr -n wordpressdr
+----
+[.console-output]
+[source,bash]
+----
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+|   NAME   |  SOURCE APP  | DESTINATION APP | DESIRED STATE |    STATE    |  AGE  | ERROR |
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+|  wpamr1  |  lab-vault   |    lab-vault    |   Promoted    |   Promoted  |  20s  |       |
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+----
+
+Once in the `Promoted` state, let's check the content of our namespace:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get -n wordpressdr svc,po,pvc
+----
+[.console-output]
+[source,bash]
+----
+NAME                                 TYPE           CLUSTER-IP       EXTERNAL-IP                                                              PORT(S)                      AGE
+service/wordpress                    LoadBalancer   172.30.104.107   a6fe2051eeb554284a7b3d398c119b63-831257922.us-east-2.elb.amazonaws.com   80:30175/TCP,443:30394/TCP   70s
+service/wordpress-mariadb            ClusterIP      172.30.227.139   <none>                                                                   3306/TCP                     69s
+service/wordpress-mariadb-headless   ClusterIP      None             <none>                                                                   3306/TCP                     69s
+
+NAME                             READY   STATUS    RESTARTS   AGE
+pod/wordpress-64f8c88c45-hns76   1/1     Running   0          70s
+pod/wordpress-mariadb-0          1/1     Running   0          69s
+
+NAME                                             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS        VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-wordpress-mariadb-0   Bound    pvc-1fc62930-31da-4d2d-92ca-4449fe13211c   8Gi        RWO            storage-class-nfs   <unset>                 5m4s
+persistentvolumeclaim/wordpress                  Bound    pvc-29440095-169e-4524-94f7-e45e03e1e2d6   10Gi       RWO            storage-class-nfs   <unset>                 5m4s
+----
+
+As you can see, everything is back! +
+If you connect on your browser to the FQDN provided by the LoadBalancer, you should be able to connect to Wordpress and see the content create in the Module-03.
+
+If you have reached this point, congratulations, you have succesfully completed this lab! And you've learned how to provide fast and efficient backup, restore and disaster recovery for container and VM workloads on OpenShift. 

@@ -1,0 +1,24 @@
+---
+site:
+  title: Hands-on Disaster Recovery of OpenShift containers and VMs with Trident Protect
+  start_page: modules::index.adoc
+
+content:
+  sources:
+    - url: .
+      start_path: content
+
+ui:
+  bundle:
+    url: https://github.com/rhpds/rhdp_showroom_theme/releases/download/v0.0.1/ui-bundle.zip
+runtime:
+  cache_dir: ./.cache/antora
+
+output:
+  dir: ./www
+
+antora:
+  extensions:
+    - id: dev-mode
+      require: ./content/lib/dev-mode.js
+      enabled: true

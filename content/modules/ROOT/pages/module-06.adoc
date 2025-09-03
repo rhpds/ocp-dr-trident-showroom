@@ -1,0 +1,440 @@
+# Module 6: Disaster Recovery Plan for your VM
+
+For this module, make sure you are connected to the OpenShift PROD Console, then switch to the Virtualization Tab and make sure the `my-vm` project is selected. Finally enter the VM detail page.
+
+== Virtual Machine customization
+
+* Now that the Virtual Machine is running, you can start adding some content. Press the `Open Web console` link
+
+image::Mod6_OCP_Console_VM_Running_OpenWebConsole.png[Open Web Console]
+
+* This opens a new window. First Press on the `Guest login credentials` link, and use the information you see to log into the system
+
+image::Mod6_OCP_Console_CentOS_console.png[CentOS console]
+
+* Create a file in the home directory
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+echo "this is my file" > myfile.txt
+----
+
+You can now close that Web Console.
+
+== Disaster Recovery Configuration
+
+Time to protect this very critical workloads! Instead of a backup, we will setup a regular data replication, creating a warm standby on our DR cluster so we can quickly failover in case of a disaster. +
+We are going to use the CLI to perform that operation. +
+
+Make sure you are connected on the PROD cluster:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config use-context PROD
+----
+
+Setting the Disaster Recovery Plan is done in a few steps:
+
+* Configure the "storage peering" between the source and target environments (_already done for you during the lab creation_)
+* Create a Trident Protect application (for the whole namespace in this exercise)
+* Create an Application snapshot (_and optionally a schedule_)
+* Retrieve the application ID
+* Setup the Trident Protect AMR (_Application Mirror Relationship_)
+
+[NOTE]
+====
+* AMR are based on the NetApp SnapMirror technology to efficiently replicate persistent volumes directly at the storage level.
+* Creating the AMR can also be done with GitOps methodologies to automatically protect your application 
+====
+
+[#creation]
+=== Create a Trident Protect application for the *my-vm* namespace
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect create app my-vm --namespaces my-vm -n my-vm
+----
+Check that the application is present:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get app -n my-vm
+----
+[.console-output]
+[source,bash]
+----
++-----------+------------+-------+-----+
+|   NAME    | NAMESPACES | STATE | AGE |
++-----------+------------+-------+-----+
+|   my-vm   |   my-vm    | Ready | 26s |
++-----------+------------+-------+-----+
+----
+
+[#snapshot]
+=== Create a Trident Protect snapshot of the *my-vm* namespace
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect create snapshot vmsnap1 --app my-vm --appvault lab-vault -n my-vm
+----
+Check that the snapshot is done:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get snap -n my-vm
+----
+[.console-output]
+[source,bash]
+----
++-----------+--------------+-----------+-----+-------+
+|   NAME    |    APP REF   |   STATE   | AGE | ERROR |
++-----------+--------------+-----------+-----+-------+
+|  vmsnap1  |     my-vm    | Completed | 11s |       |
++-----------+--------------+-----------+-----+-------+
+----
+
+[IMPORTANT]
+====
+Trident Protect automatically _freezes_ and _unfreezes_ KubeVirt filesystems during data protection operations. +
+If needed, this could be disabled
+====
+
+[#schedule]
+=== Create a Snapshot Schedule
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+cat << EOF | kubectl apply -f -
+apiVersion: protect.trident.netapp.io/v1
+kind: Schedule
+metadata:
+  name: snap-sched1
+  namespace: my-vm
+spec:
+  appVaultRef: lab-vault
+  applicationRef: my-vm
+  backupRetention: "0" # <1>
+  enabled: true
+  granularity: Custom
+  recurrenceRule: |-
+    DTSTART:20250430T000000Z
+    RRULE:FREQ=MINUTELY;INTERVAL=5
+  snapshotRetention: "3" # <2>
+EOF
+----
+<1> default value for backupRetention is 3
+<2> default value for snapshotRetention is 3
+
+[NOTE]
+====
+You could also use the command line to create traditional schedules (hourly, daily, weekly, monthly). +
+As we use a custom frequency of 5 minutes, it is easier to enter as a YAML manifest
+====
+
+Check that it has been taken into account
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get schedule -n my-vm
+----
+[.console-output]
+[source,bash]
+----
++-------------+-------+--------------------------------+---------+-------+-------+-----+
+|    NAME     |  APP  |            SCHEDULE            | ENABLED | STATE | ERROR | AGE |
++-------------+-------+--------------------------------+---------+-------+-------+-----+
+| snap-sched1 | my-vm | DTSTART:20250430T000000Z       | true    |       |       | 2s  |
+|             |       | RRULE:FREQ=MINUTELY;INTERVAL=5 |         |       |       |     |
++-------------+-------+--------------------------------+---------+-------+-------+-----+
+----
+
+[#mirror]
+=== Retrieve the Trident Protect application ID
+
+This ID is required to configure the mirror relationship. +
+Place that ID in a variable, and check the result.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+SRCAPPID=$(tridentctl-protect get app my-vm -n my-vm -o json | jq -r .metadata.uid)
+echo $SRCAPPID
+----
+
+=== Setup the mirroring relationship
+
+The remaining part of this module will be done in the DR cluster. +
+Switch context to the DR cluster.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config use-context DR
+----
+
+You can now create a new namespace which will host the mirror of the VM, initiated by an AMR (_AppMirrorRelationship_) setup with Trident Protect.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc create ns vmdr
+
+cat << EOF | oc apply -f -
+apiVersion: protect.trident.netapp.io/v1
+kind: AppMirrorRelationship
+metadata:
+  name: vmamr1
+  namespace: vmdr
+spec:
+  desiredState: Established
+  destinationAppVaultRef: lab-vault
+  namespaceMapping:
+  - destination: vmdr
+    source: my-vm
+  recurrenceRule: |-
+    DTSTART:20240901T000200Z
+    RRULE:FREQ=MINUTELY;INTERVAL=5
+  sourceAppVaultRef: lab-vault
+  sourceApplicationName: my-vm
+  sourceApplicationUID: $SRCAPPID
+  storageClassName: storage-class-iscsi
+EOF
+----
+
+[NOTE]
+====
+When creating the AMR with the tridentctl-protect tool, you don't need to manually create the target namespace. +
+Trident will perform that task for you.
+====
+
+[IMPORTANT]
+====
+As you need to specify the target storage class when creating an _AMR_, make sure it fits the same protocol and services as the source one.
+You cannot mirror from iSCSI to NFS for instance (but you can backup from iSCSI and restore to NFS)
+====
+
+Let's check the status of this new object on the DR cluster. +
+It should be in the `Establishing` state, which means that the configuration is on-going.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get amr -n vmdr
+----
+[.console-output]
+[source,bash]
+----
++----------+--------------+-----------------+---------------+--------------+-----+-------+
+|   NAME   |  SOURCE APP  | DESTINATION APP | DESIRED STATE |     STATE    | AGE | ERROR |
++----------+--------------+-----------------+---------------+--------------+-----+-------+
+|  vmamr1  |  lab-vault   |    lab-vault    | Established   | Establishing | 41s |       |
++----------+--------------+-----------------+---------------+--------------+-----+-------+
+----
+It will take a couple of minutes for the mirroring to be setup, wait & repeat until the State is `Established`.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get amr -n vmdr
+----
+[.console-output]
+[source,bash]
+----
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+|   NAME   |  SOURCE APP  | DESTINATION APP | DESIRED STATE |    STATE    |  AGE  | ERROR |
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+|  vmamr1  |  lab-vault   |    lab-vault    | Established   | Established |  1m30 |       |
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+----
+
+Everything is now ready. Your VM is protected and the DR plan is setup!
+
+Last thing to check, when the mirror is configured, you will only see the PVC on the target namespace. +
+All remaining application objects will be deployed once you activate the DR.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get -n vmdr pvc
+----
+[.console-output]
+[source,bash]
+----
+NAME                                          STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS          VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/centos-stream9-boston   Bound    pvc-86c8b548-a9c5-4623-b672-7d4d1d5d01c1   30Gi       RWX            storage-class-iscsi   <unset>                 75s
+----
+
+[NOTE]
+====
+Even though the PVC is labelled RWX, it is currently `Read-Only`, as this volume is the mirror replication target. +
+It will become `Read-Write` once you fail over the VM.
+====
+
+[#failover]
+== Failover your VM
+
+Failover your VM is pretty straight forward. You just need to _patch_ the AMR on the DR cluster. +
+This will break the mirror relationship, which in turn changes the volumes from `Read-Only` to `Read-Write`. From there, Trident Protect will redeploy all the protected objects on top of the PVC so you get your VM back, up & running.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc patch amr vmamr1 -n vmdr --type=merge -p '{"spec":{"desiredState":"Promoted"}}'
+----
+[NOTE]
+====
+In this lab, you are performing an application failover in the same way you would run a Disaster Recovery exercise with your own infrastructure. +
+In other words, you are not destroying the source environment. +
+_Promoting_ the AMR *will not* delete the source app. The production environment is not impacted. +
+You are actually going to re-sync the application later in this module.
+====
+
+Fairly quickly, you should get to the following status (`Promoting` followed by `Promoted`)
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get amr -n vmdr
+----
+[.console-output]
+[source,bash]
+----
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+|   NAME   |  SOURCE APP  | DESTINATION APP | DESIRED STATE |    STATE    |  AGE  | ERROR |
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+|  vmamr1  |  lab-vault   |    lab-vault    |   Promoted    |   Promoted  |  20s  |       |
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+----
+
+Let's check the content of our namespace:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get -n vmdr vm,pvc
+----
+[.console-output]
+[source,bash]
+----
+NAME                                               AGE   STATUS    READY
+virtualmachine.kubevirt.io/centos-stream9-boston   9s    Running   True
+
+NAME                                          STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS          VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/centos-stream9-boston   Bound    pvc-86c8b548-a9c5-4623-b672-7d4d1d5d01c1   30Gi       RWX            storage-class-iscsi   <unset>                 2m44s
+----
+
+[NOTE]
+====
+It might take a moment until the VM is started and then in Running state.
+====
+
+[NOTE]
+====
+If you needed to tailor the target VM, you could setup a PostFailover Hook with Trident Protect!
+====
+
+== Check the result
+
+Connect to the OpenShift DR Console and navigate to the Virtual Machines menu. +
+Log into the console and verify what our test file is there. Everything is failed over from the production cluster. 
+
+* Connect to the DR Console and navigate to the Virtual Machines menu:
+
+image::Mod6_OCP_DR_Console_VMs.png[VMs List]
+
+* Check that the VM is `running` and press on the `Open web console` link:
+
+image::Mod6_OCP_DR_Console_VM_Status.png[VM Status]
+
+NOTE: Even though the VM status may be `Ready`, it still takes a couple of minutes for the boot and configuration to complete, at which point you can log in.
+
+* This opens a new window. First Press on the `Guest login credentials` link, and use the information you see to log into the system
+
+image::Mod6_OCP_DR_Console_CentOS_console.png[CentOS console]
+
+* You will then see the content you created earlier:
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+ls; more *
+----
+[.console-output]
+[source,bash]
+----
+myfile.txt
+this is my file
+----
+
+Pretty awesome, no?
+
+[#resync]
+== Resynchronize the mirror
+
+You have managed to create a VM, configure an asynchronous mirror relationship and test the DR failover. +
+Let's go back to an initial state and resynchronize the mirror relationship from PROD to DR +
+This can be easily achieved by just updating the state of the AMR once again:
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc patch amr vmamr1 -n vmdr --type=merge -p '{"spec":{"desiredState":"Established"}}'
+----
+You will see that the AMR is now in `Reestablishing` state:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get amr -n vmdr
+----
+[.console-output]
+[source,bash]
+----
++--------+------------+------------------+-----------------+-----------------------+---------------+----------------+-------+-------+
+|  NAME  | SOURCE APP | SOURCE APP VAULT | DESTINATION APP | DESTINATION APP VAULT | DESIRED STATE |     STATE      | ERROR |  AGE  |
++--------+------------+------------------+-----------------+-----------------------+---------------+----------------+-------+-------+
+| vmamr1 | my-vm      | lab-vault        | my-vm           | lab-vault             | Established   | Reestablishing |       | 8m33s |
++--------+------------+------------------+-----------------+-----------------------+---------------+----------------+-------+-------+
+----
+After about 5 minutes, the mirroring should be back to its nominal state:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get amr -n vmdr
+----
+[.console-output]
+[source,bash]
+----
++--------+------------+------------------+-----------------+-----------------------+---------------+-------------+-------+--------+
+|  NAME  | SOURCE APP | SOURCE APP VAULT | DESTINATION APP | DESTINATION APP VAULT | DESIRED STATE |    STATE    | ERROR |  AGE   |
++--------+------------+------------------+-----------------+-----------------------+---------------+-------------+-------+--------+
+| vmamr1 | my-vm      | lab-vault        | my-vm           | lab-vault             | Established   | Established |       | 13m29s |
++--------+------------+------------------+-----------------+-----------------------+---------------+-------------+-------+--------+
+----
+
+NOTE: You may see a temporary warning message if you refresh too quickly. Do no take it into account, it will disappear soon.
+
+[IMPORTANT]
+====
+Resynchronizing the mirror will stop and delete everything but the PVC on the DR site. When an AMR is established, the only object you can see in the DR namespce is the PVC. +
+This PVC is back on `ReadOnly` mode as it is the target of the mirror relationship. +
+Everything is now ready for another DR failover to this cluster.
+====
+
+You are now done with this module. Please proceed with the next one.
