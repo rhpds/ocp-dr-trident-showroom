@@ -67,7 +67,7 @@ trident-protect-controller-manager-7cdff78665-brjxk            2/2     Running  
 ====
 Another pod (`autosupportbundle`) should eventually appear. +
 Its role is to generate support data and send telemetry to NetApp Support.
-==== 
+====
 
 There are also a whole list of CRD installed with Trident Protect:
 [.lines_space]
@@ -108,7 +108,7 @@ snapshots.protect.trident.netapp.io                    2025-03-17T14:23:58Z
 
 [NOTE]
 ====
-According to the OpenShift Container Platform documentation: 
+According to the OpenShift Container Platform documentation:
 
 * In the Kubernetes API, a _resource_ is an endpoint that stores a collection of API objects of a certain kind. For example, the built-in `Pods` resource contains a collection of `Pod` objects.
 * A _custom resource definition_ (CRD) object defines a new, unique object type, called a _kind_, in the cluster and lets the Kubernetes API server handle its entire lifecycle.
@@ -161,7 +161,7 @@ You are now ready to proceed with the AppVault creation, which is done in the _t
 [.console-input]
 [source,bash,role=execute,subs="attributes"]
 ----
-tridentctl-protect create appvault AWS lab-vault --secret aws-s3-keys --bucket {s3_bucket_name} --endpoint s3.us-east-2.amazonaws.com --data-mover-password-secret-ref appvault-secret -n trident-protect
+tridentctl-protect create appvault AWS lab-vault --secret aws-s3-keys --bucket {s3_bucket_name} --endpoint s3.{aws_default_region}.amazonaws.com --data-mover-password-secret-ref appvault-secret -n trident-protect
 tridentctl-protect get appvault -n trident-protect
 ----
 [.console-output]
@@ -174,10 +174,10 @@ tridentctl-protect get appvault -n trident-protect
 +-----------+----------+-----------+-------+---------+-----+
 ----
 
-You might have to wait a few seconds and repeat the last command until the state is "Available". 
+You might have to wait a few seconds and repeat the last command until the state is "Available".
 
 
-[NOTE] 
+[NOTE]
 ====
 In a production environment, the administrator may also perform the following tasks:
 

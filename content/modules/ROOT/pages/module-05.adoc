@@ -5,7 +5,7 @@ Trident Protect can help you protect *applications*.
 Now, what *_IS_* an application? How do you *_DEFINE_* it? +
 Very philosophical questions, isn't it?
 
-10 people may have 10 different answers. 
+10 people may have 10 different answers.
 
 With Trident Protect you get full flexibility and can define applications in multiple ways:
 
@@ -15,7 +15,7 @@ With Trident Protect you get full flexibility and can define applications in mul
 
 NOTE: You can also bring cluster wide resources in the Application definition.
 
-Here are two examples with the Wordpress environment you have deployed: 
+Here are two examples with the Wordpress environment you have deployed:
 
 * Application by namespace: everything in the namespace will be protected as one (PVC, POD, ConfigMaps, ...). This is the most common option.
 * Application by label: you could protect the frontend & the backend differently, maybe with different schedules.
@@ -174,7 +174,7 @@ First, you can notice that Trident Protect created some sub-folders to copy the 
 [source,bash,role=execute,subs="attributes"]
 ----
 BUCKETFOLDERS=$(oc -n wordpress get backup wpbkp1 -o=jsonpath='{.status.appArchivePath}' | awk -F '/' '{print $1}')
-aws s3 ls --no-verify-ssl --endpoint-url http://s3.us-east-2.amazonaws.com s3://{s3_bucket_name}/$BUCKETFOLDERS/
+aws s3 ls --no-verify-ssl --endpoint-url http://s3.{aws_default_region}.amazonaws.com s3://{s3_bucket_name}/$BUCKETFOLDERS/
 ----
 [.console-output]
 [source,bash]
@@ -193,7 +193,7 @@ Then, you can also parse the content of the backup:
 [source,bash,role=execute,subs="attributes"]
 ----
 BKPPATH=$(oc -n wordpress get backup wpbkp1 -o=jsonpath='{.status.appArchivePath}')
-aws s3 ls --no-verify-ssl --endpoint-url http://s3.us-east-2.amazonaws.com s3://{s3_bucket_name}/$BKPPATH --recursive --summarize --human-readable
+aws s3 ls --no-verify-ssl --endpoint-url http://s3.{aws_default_region}.amazonaws.com s3://{s3_bucket_name}/$BKPPATH --recursive --summarize --human-readable
 ----
 
 [#schedule]
@@ -279,13 +279,13 @@ tridentctl-protect get backup -n wordpress
 [#restore]
 == Restore your application
 
-While protection is done for the whole application, restoring an application offers multiple choices: 
+While protection is done for the whole application, restoring an application offers multiple choices:
 
 * You can perform a *complete restore* or a *partial restore*
 * You can restore your application *in-place* or in a *different namespace* (same cluster or a different cluster)
 * You can even tailor the restore with a *post-restore hook*
 
-Let's perform a full restore on the *DR* cluster! 
+Let's perform a full restore on the *DR* cluster!
 
 First step, make sure you are connected on the DR context:
 [.lines_space]

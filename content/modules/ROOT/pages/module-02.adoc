@@ -6,7 +6,7 @@ This task is generally done by the OpenShift administrator.
 
 NetApp Trident can be installed in various ways:
 
-* Using a installer binary for heavily customized environments 
+* Using a installer binary for heavily customized environments
 * Using an operator
 * Using a Helm Chart (that installs the operator)
 
@@ -17,9 +17,9 @@ You will use that method in this lab.
 == Install the NetApp Trident Operator
 
 * Connect to the Red Hat OpenShift GUI on the *DR* cluster:
-** *URL*: {rosa2_openshift_console_url}[window=_blank] icon:external-link[]
-** *user*: {rosa2_openshift_admin_user}
-** *password*: {rosa2_openshift_admin_password}
+** *URL*: {rosa_dr_openshift_console_url}[window=_blank] icon:external-link[]
+** *user*: {rosa_dr_openshift_admin_user}
+** *password*: {rosa_dr_openshift_admin_password}
 * Locate the *OperatorHub* sub-menu in the *Operators* category
 * Filter on *trident*
 
@@ -33,7 +33,7 @@ image::Mod2_OCP_Console_OperatorHub_Trident_Install.png[Installer]
 
 image::Mod2_OCP_Console_OperatorHub_Trident_Install2.png[Configuration]
 
-* The installation is fairly quick. Wait until the installation is complete. In less than 2 minutes, the Operator will be ready to use.  
+* The installation is fairly quick. Wait until the installation is complete. In less than 2 minutes, the Operator will be ready to use.
 
 image::Mod2_OCP_Console_OperatorHub_Trident_Installed.png[TridentInstalled]
 
@@ -55,7 +55,7 @@ apiVersion: trident.netapp.io/v1
 kind: TridentOrchestrator
 metadata:
   name: trident
-  namespace: openshift-operators 
+  namespace: openshift-operators
 spec:
   IPv6: false
   debug: false
@@ -97,7 +97,7 @@ To authenticate `oc` use the API URL, username, and password provided by the RHD
 [.console-input]
 [source,bash,role=execute,subs="attributes"]
 ----
-oc login -u {rosa2_openshift_admin_user} -p {rosa2_openshift_admin_password} {rosa2_openshift_api_url}
+oc login -u {rosa_dr_openshift_admin_user} -p {rosa_dr_openshift_admin_password} {rosa_dr_openshift_api_url}
 ----
 
 [#tridentinstalled]
@@ -137,7 +137,7 @@ trident-node-linux-qm8nz              2/2     Running   0          34s
 trident-node-linux-sc2tn              2/2     Running   0          34s
 ----
 
-NOTE: Trident consists of a controller component as well as a deamonset to ensure a Trident pod runs on each node and can control local mount/unmount activities for storage. 
+NOTE: Trident consists of a controller component as well as a deamonset to ensure a Trident pod runs on each node and can control local mount/unmount activities for storage.
 
 
 === Install the tridentctl tool
@@ -173,9 +173,9 @@ tridentctl -n trident version
 == Configure Trident
 
 A *backend* defines the relationship between Trident and a storage system. It tells Trident how to communicate with that storage system and how Trident should provision volumes from it.
-These backends are linked to a *secret* which contains the credentials of the storage system (or a software-defined tenant on that system). Trident can handle multiple storage backends at the same time. 
+These backends are linked to a *secret* which contains the credentials of the storage system (or a software-defined tenant on that system). Trident can handle multiple storage backends at the same time.
 
-NOTE: In this lab we will create backends for NFS (file) and iSCSI (block) protocols. Trident also supports various other storage protocols such as NVMe, Fibre Channel and SMB. 
+NOTE: In this lab we will create backends for NFS (file) and iSCSI (block) protocols. Trident also supports various other storage protocols such as NVMe, Fibre Channel and SMB.
 
 === Create a secret to store the SVM username and password in the ROSA cluster
 
@@ -326,12 +326,12 @@ dr-backend-fsxn-iscsi   dr-fsxn-iscsi       1f490bf3-492c-4ef7-899e-9e7d8711c82g
 == Storage Classes
 
 The very last step is about creating storage classes that will use Trident backends. +
-A storage class is necessary to instruct Trident how to provision volumes.  
+A storage class is necessary to instruct Trident how to provision volumes.
 
 [NOTE]
 ====
-ReadWriteMany (RWX) is required for *_Live Migration_* of your VMs. 
-This access mode is supported with all protocols proposed by Trident (File and Block).  
+ReadWriteMany (RWX) is required for *_Live Migration_* of your VMs.
+This access mode is supported with all protocols proposed by Trident (File and Block).
 
 However, configuring a RWX workload with a block protocol such as iSCSI requires two things:
 
@@ -575,7 +575,7 @@ You will also first need to log into that PROD cluster.
 [.console-input]
 [source,bash,role=execute,subs="attributes"]
 ----
-oc login -u {rosa_openshift_admin_user} -p {rosa_openshift_admin_password} {rosa_openshift_api_url}
+oc login -u {rosa_prod_openshift_admin_user} -p {rosa_prod_openshift_admin_password} {rosa_prod_openshift_api_url}
 oc delete dv,volumesnapshot -n openshift-virtualization-os-images --selector=cdi.kubevirt.io/dataImportCron
 ----
 

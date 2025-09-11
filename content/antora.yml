@@ -14,6 +14,13 @@ asciidoc:
     ssh_user: devops
     ssh_password: devops
     ssh_command: ssh devops@bastion.{guid}.example.opentlc.com
+    bastion_public_hostname: sample-bastion.{guid}.example.opentlc.com
+    bastion_ssh_password: password
+    bastion_ssh_user_name: rosa
+    rosa_dr_openshift_api_url: rosa_dr_openshift_api_url
+    rosa_dr_openshift_console_url: rosa_dr_openshift_console_url
+    rosa_dr_openshift_admin_user: rosa_dr_openshift_admin_user
+    rosa_dr_openshift_admin_password: rosa_dr_openshift_admin_password
     page-links:
     - url: https://redhat.com
       text: Red Hat
