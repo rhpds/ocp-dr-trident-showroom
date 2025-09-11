@@ -21,7 +21,7 @@ You will use that method in this lab.
 ** *user*: {rosa_dr_openshift_admin_user}
 ** *password*: {rosa_dr_openshift_admin_password}
 * Locate the *OperatorHub* sub-menu in the *Operators* category
-* Filter on *trident*
+* Filter on `trident`
 
 image::Mod2_OCP_Console_OperatorHub_Trident.png[OperatorHub]
 
@@ -145,10 +145,10 @@ NOTE: Trident consists of a controller component as well as a deamonset to ensur
 NetApp provides the _tridentctl_ tool for easy handling of Trident installation. Installing the _tridentctl_ binary can be useful, especially for troubleshooting.
 [.lines_space]
 [.console-input]
-[source,bash,role=execute]
+[source,bash,role=execute,subs="attributes"]
 ----
-wget https://github.com/NetApp/trident/releases/download/v25.02.1/trident-installer-25.02.1.tar.gz
-tar -xf trident-installer-25.02.1.tar.gz
+wget https://github.com/NetApp/trident/releases/download/v{ocp_dr_trident_cli_version}/trident-installer-{ocp_dr_trident_cli_version}.tar.gz
+tar -xf trident-installer-{ocp_dr_trident_cli_version}.tar.gz
 mkdir /home/rosa/bin
 cp trident-installer/tridentctl /home/rosa/bin
 ----
@@ -160,12 +160,12 @@ Verify the installation by viewing the Trident version of the installed operator
 tridentctl -n trident version
 ----
 [.console-output]
-[source,bash]
+[source,bash,subs="attributes"]
 ----
 +----------------+----------------+
 | SERVER VERSION | CLIENT VERSION |
 +----------------+----------------+
-| 25.02.1        | 25.02.1        |
+| 25.06.1        | {ocp_dr_trident_cli_version}
 +----------------+----------------+
 ----
 

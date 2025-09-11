@@ -146,8 +146,8 @@ For this chapter, most tasks are going to be done in the OpenShift GUI.
 
 * Log into the PROD OpenShift console
 ** *URL*: {rosa_prod_openshift_console_url}[window=_blank] icon:external-link[]
-** *user*: {rosa_prod_openshift_admin_user}
-** *password*: {rosa_prod_openshift_admin_password}
+** *user*: `{rosa_prod_openshift_admin_user}`
+** *password*: `{rosa_prod_openshift_admin_password}`
 
 * Navigate to Home --> Projects and create a new project by using the `Create Project` button on the top right. Name the project `my-vm`
 
