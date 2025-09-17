@@ -228,7 +228,7 @@ Let's assign it to a variable.
 [.console-input]
 [source,bash,role=execute]
 ----
-export SVMIP=$(aws fsx describe-storage-virtual-machines | jq -r '.StorageVirtualMachines[].Endpoints.Management.IpAddresses[]' | grep 10.10) && echo $SVMIP
+export SVMIP=$(aws fsx --profile dr describe-storage-virtual-machines | jq -r '.StorageVirtualMachines[].Endpoints.Management.IpAddresses[]' | grep 10.10) && echo $SVMIP
 ----
 
 Run the following commands to create the Trident backend in the ROSA cluster.
@@ -505,8 +505,10 @@ persistentvolumeclaim/rhel10-beta-da1c0cdc24da      Bound    pvc-042c4b71-b91c-4
 persistentvolumeclaim/rhel8-833d0f124287            Bound    pvc-96250ddf-3a1c-4814-851c-275035dd9548   30Gi       RWO            gp3            <unset>                 10h
 persistentvolumeclaim/rhel9-0c9204ba64c2            Bound    pvc-5d10c854-bf26-44eb-b261-356721e785ec   30Gi       RWO            gp3            <unset>                 10h
 ----
++
+NOTE: This process takes about three minutes.
 
-You defined earlier AWS FSx as the default storage class for Virtual Machines. +
+Earlier, you defined AWS FSx as the default storage class for Virtual Machines. +
 You can also verify this by running the following. You should get `storage-class-iscsi` as a result.
 [.lines_space]
 [.console-input]
