@@ -34,7 +34,6 @@ You are now ready to proceed:
 ----
 helm repo add netapp-trident-protect https://netapp.github.io/trident-protect-helm-chart/
 oc create ns trident-protect
-helm install trident-protect-crds netapp-trident-protect/trident-protect-crds --version {ocp_dr_trident_helm_chart_version} --namespace trident-protect
 helm install trident-protect netapp-trident-protect/trident-protect --set clusterName=dr --version {ocp_dr_trident_helm_chart_version}  --namespace trident-protect
 ----
 
