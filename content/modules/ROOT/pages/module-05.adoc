@@ -163,8 +163,8 @@ tridentctl-protect get backup -n wordpress
 | wpbkp1 | wordpress | Retain         | Completed |       | 1m15s |
 +--------+-----------+----------------+-----------+-------+-------+
 ----
-
-NOTE: It is expected for the backup to take more time than the snapshot, as data is also copied to the object store
+NOTE: This process can take up to five minutes.
+It is expected for the backup to take more time than the snapshot, as data is also copied to the object store.
 
 While you wait for the backup to succeed, you can also verify that some content is getting created in the bucket. +
 First, you can notice that Trident Protect created some sub-folders to copy the app metadata as well as the data:
