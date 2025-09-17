@@ -4,11 +4,13 @@ For this module, make sure you are connected to the OpenShift PROD Console, then
 
 == Virtual Machine customization
 
-* Now that the Virtual Machine is running, you can start adding some content. Press the `Open Web console` link
+* Navigate to the {rosa_prod_openshift_console_url}[OpenShfit PROD console,window=_blank], and navigate to the *Virtualization* -> *VirtualMachines* menu.
+
+* Now that the Virtual Machine is running, you can start adding some content. Press the *Open Web console* link
 
 image::Mod6_OCP_Console_VM_Running_OpenWebConsole.png[Open Web Console]
 
-* This opens a new window. First Press on the `Guest login credentials` link, and use the information you see to log into the system
+* This opens a new window. First Press on the *Guest login credentials* link, and use the information you see to log into the system
 
 image::Mod6_OCP_Console_CentOS_console.png[CentOS console]
 
@@ -47,7 +49,7 @@ Setting the Disaster Recovery Plan is done in a few steps:
 [NOTE]
 ====
 * AMR are based on the NetApp SnapMirror technology to efficiently replicate persistent volumes directly at the storage level.
-* Creating the AMR can also be done with GitOps methodologies to automatically protect your application 
+* Creating the AMR can also be done with GitOps methodologies to automatically protect your application
 ====
 
 [#creation]
@@ -226,7 +228,7 @@ You cannot mirror from iSCSI to NFS for instance (but you can backup from iSCSI 
 ====
 
 Let's check the status of this new object on the DR cluster. +
-It should be in the `Establishing` state, which means that the configuration is on-going.
+It should be in the *Establishing* state, which means that the configuration is on-going.
 [.lines_space]
 [.console-input]
 [source,bash,role=execute]
@@ -242,7 +244,7 @@ tridentctl-protect get amr -n vmdr
 |  vmamr1  |  lab-vault   |    lab-vault    | Established   | Establishing | 41s |       |
 +----------+--------------+-----------------+---------------+--------------+-----+-------+
 ----
-It will take a couple of minutes for the mirroring to be setup, wait & repeat until the State is `Established`.
+It will take a couple of minutes for the mirroring to be setup, wait and repeat until the State is *Established*.
 [.lines_space]
 [.console-input]
 [source,bash,role=execute]
@@ -278,15 +280,15 @@ persistentvolumeclaim/centos-stream9-boston   Bound    pvc-86c8b548-a9c5-4623-b6
 
 [NOTE]
 ====
-Even though the PVC is labelled RWX, it is currently `Read-Only`, as this volume is the mirror replication target. +
-It will become `Read-Write` once you fail over the VM.
+Even though the PVC is labelled RWX, it is currently *Read-Only*, as this volume is the mirror replication target. +
+It will become *Read-Write* once you fail over the VM.
 ====
 
 [#failover]
 == Failover your VM
 
 Failover your VM is pretty straight forward. You just need to _patch_ the AMR on the DR cluster. +
-This will break the mirror relationship, which in turn changes the volumes from `Read-Only` to `Read-Write`. From there, Trident Protect will redeploy all the protected objects on top of the PVC so you get your VM back, up & running.
+This will break the mirror relationship, which in turn changes the volumes from *Read-Only* to *Read-Write*. From there, Trident Protect will redeploy all the protected objects on top of the PVC so you get your VM back, up & running.
 
 [.lines_space]
 [.console-input]
@@ -302,7 +304,7 @@ _Promoting_ the AMR *will not* delete the source app. The production environment
 You are actually going to re-sync the application later in this module.
 ====
 
-Fairly quickly, you should get to the following status (`Promoting` followed by `Promoted`)
+Fairly quickly, you should get to the following status (*Promoting* followed by *Promoted*)
 [.lines_space]
 [.console-input]
 [source,bash,role=execute]
@@ -348,20 +350,20 @@ If you needed to tailor the target VM, you could setup a PostFailover Hook with 
 
 == Check the result
 
-Connect to the OpenShift DR Console and navigate to the Virtual Machines menu. +
-Log into the console and verify what our test file is there. Everything is failed over from the production cluster. 
+Connect to the {rosa_dr_openshift_console_url}[OpenShift DR Console,window=_blank] and navigate to the *VirtualMachines* menu. +
+Log into the console and verify what our test file is there. Everything is failed over from the production cluster.
 
-* Connect to the DR Console and navigate to the Virtual Machines menu:
+* Connect to the {rosa_dr_openshift_console_url}[OpenShift DR Console,window=_blank] and navigate to the *VirtualMachines* menu:
 
 image::Mod6_OCP_DR_Console_VMs.png[VMs List]
 
-* Check that the VM is `running` and press on the `Open web console` link:
+* Check that the VM is *running* and press on the *Open web console* link:
 
 image::Mod6_OCP_DR_Console_VM_Status.png[VM Status]
 
-NOTE: Even though the VM status may be `Ready`, it still takes a couple of minutes for the boot and configuration to complete, at which point you can log in.
+NOTE: Even though the VM status may be *Ready*, it still takes a couple of minutes for the boot and configuration to complete, at which point you can log in.
 
-* This opens a new window. First Press on the `Guest login credentials` link, and use the information you see to log into the system
+* This opens a new window. First Press on the *Guest login credentials* link, and use the information you see to log into the system
 
 image::Mod6_OCP_DR_Console_CentOS_console.png[CentOS console]
 
@@ -395,7 +397,7 @@ This can be easily achieved by just updating the state of the AMR once again:
 ----
 oc patch amr vmamr1 -n vmdr --type=merge -p '{"spec":{"desiredState":"Established"}}'
 ----
-You will see that the AMR is now in `Reestablishing` state:
+You will see that the AMR is now in *Reestablishing* state:
 [.lines_space]
 [.console-input]
 [source,bash,role=execute]
@@ -433,7 +435,7 @@ NOTE: You may see a temporary warning message if you refresh too quickly. Do no 
 [IMPORTANT]
 ====
 Resynchronizing the mirror will stop and delete everything but the PVC on the DR site. When an AMR is established, the only object you can see in the DR namespce is the PVC. +
-This PVC is back on `ReadOnly` mode as it is the target of the mirror relationship. +
+This PVC is back on *ReadOnly* mode as it is the target of the mirror relationship. +
 Everything is now ready for another DR failover to this cluster.
 ====
 
