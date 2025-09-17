@@ -40,6 +40,6 @@ The lab environment consists of:
 * An AWS S3 bucket, that is used by Trident Protect as destination of data and metadata backups, is already created in the AWS account 
 * In addition to provision and protecting container workloads, in Module 3 and Module 6, you will privision a CentOS 9 VM in my-vm namespace in prod ROSA cluster, and you'll replicate it to vmdr namespace in dr ROSA cluster, as reflected in the following diagram
 
-== Diagram of the Demo Environment
+== Diagram of the Lab Environment
 
 image::Mod1_lab_diagram.png[LabDiagram]
