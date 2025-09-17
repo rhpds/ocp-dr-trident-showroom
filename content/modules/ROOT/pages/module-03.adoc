@@ -103,7 +103,7 @@ persistentvolumeclaim/wordpress                  Bound    pvc-774a516b-2205-462f
 You might have to wait a few more seconds and then repeat the above command until both pods show a staus of "Ready 1/1".
 
 Notice the wordpress service ? +
-Copy & paste the address (the _EXTERNAL-IP_) provided by the Load Balancer in your browser in order to access WordPress:
+Copy & paste the address (the _EXTERNAL-IP_) provided by the Load Balancer in your browser and prepend `https://` in order to access WordPress:
 
 image::Mod3_Wordpress_HelloWorld.png[HelloWorld]
 
