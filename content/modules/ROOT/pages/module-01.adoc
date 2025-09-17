@@ -29,7 +29,7 @@ Amazon FSx for NetApp ONTAP is a native AWS storage service that allows customer
 
 The lab environment consists of:
 
-* Two ROSA (Red Hat OpenShift Service on AWS) clusters version 4.16: "prod" and "dr". 
+* Two ROSA (Red Hat OpenShift Service on AWS) clusters version 4.18: "prod" and "dr". 
 * Each ROSA cluster has its own VPC. Both VPCs are in a single AWS account. The prod ROSA cluster has CIDR 10.0.0.0/16, and dr ROSA cluster has CIDR 10.10.0.0/16. 
 * In each VPC there is a FSx for NetApp ONTAP filesystem. Security Groups are configured to allow connection between ROSA cluster and FSx filesytem. Inside each FSx filesystem there is a Storage Virtual Machine (SVM) created to be dedicated to OpenShift. 
 * A VPC peering is configured between both VPCs to allow replication between the two FSx filesystems. The route tables and Security groups are updated to allow the replication between filesystems in both directions.
