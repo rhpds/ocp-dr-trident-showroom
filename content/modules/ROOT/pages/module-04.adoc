@@ -30,20 +30,20 @@ Error from server (NotFound): namespaces "trident-protect" not found
 You are now ready to proceed:
 [.lines_space]
 [.console-input]
-[source,bash,role=execute]
+[source,bash,role=execute,subs="attributes"]
 ----
 helm repo add netapp-trident-protect https://netapp.github.io/trident-protect-helm-chart/
 oc create ns trident-protect
-helm install trident-protect-crds netapp-trident-protect/trident-protect-crds --version 100.2502.0 --namespace trident-protect
-helm install trident-protect netapp-trident-protect/trident-protect --set clusterName=dr --version 100.2502.0 --namespace trident-protect
+helm install trident-protect-crds netapp-trident-protect/trident-protect-crds --version {ocp_dr_trident_helm_chart_version} --namespace trident-protect
+helm install trident-protect netapp-trident-protect/trident-protect --set clusterName=dr --version {ocp_dr_trident_helm_chart_version}  --namespace trident-protect
 ----
 
 The binary _tridenctl-protect_ is also helpful to interact with Trident Protect.
 [.lines_space]
 [.console-input]
-[source,bash,role=execute]
+[source,bash,role=execute,subs="attributes"]
 ----
-curl -L -o tridentctl-protect https://github.com/NetApp/tridentctl-protect/releases/download/25.02.0/tridentctl-protect-linux-amd64
+curl -L -o tridentctl-protect https://github.com/NetApp/tridentctl-protect/releases/download/{25.02.0}/tridentctl-protect-linux-amd64
 chmod +x tridentctl-protect
 mv ./tridentctl-protect /home/rosa/bin/
 ----
