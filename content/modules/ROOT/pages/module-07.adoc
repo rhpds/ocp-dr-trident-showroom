@@ -6,17 +6,19 @@ This is added as a bonus module, if you still have time and would like to explor
 [#vmrestore]
 == Restore a Virtual Machine from a snapshot
 
-As a reminder, while protection is done for the whole application, restoring it with Trident Product can be done in many ways: 
+As a reminder, while protection is done for the whole application, restoring it with Trident Product can be done in many ways:
 
 * You can perform a *complete restore* or a *partial restore*
 * You can restore your application *in-place* or in a *different namespace* (same cluster or a different cluster)
 * You can even tailor the restore with a *post-restore hook*
 
-For the sake of time, you will restore the VM from the snapshot _vmsnap1_ you took in the previous module. Due to the NetApp snapshot technology, this is a very fast operation. +
-Restoring from a backup would take a bit more than 30 minutes...
+For the sake of time, you will restore the VM from the snapshot _vmsnap1_ you took in the previous module.
+Due to the NetApp snapshot technology, this is a very fast operation. +
+Restoring from a backup would take a bit more than 30 minutes.
 
 Restoring from a snapshot can be done _in-place_ or in _a different namespace within the same cluster_. +
-You are going to perform the latter one. Also, make sure you are connected to the PROD cluster:
+You are going to perform the latter one.
+Also, make sure you are connected to the PROD cluster:
 
 [.lines_space]
 [.console-input]
@@ -25,9 +27,9 @@ You are going to perform the latter one. Also, make sure you are connected to th
 oc config use-context PROD
 tridentctl-protect create sr vmsr1 --namespace-mapping my-vm:my-vm-restore --snapshot my-vm/vmsnap1 -n my-vm-restore
 ----
-NOTE: "sr" stands for `SnapshotRestore`
+NOTE: "sr" stands for *SnapshotRestore*
 
-Check that the process is running: 
+Check that the process is running:
 [.lines_space]
 [.console-input]
 [source,bash,role=execute]
@@ -92,7 +94,7 @@ persistentvolumeclaim/centos-stream9-sapphire-mink-40   Bound    pvc-1aa241da-ad
 Everything seems to be in order! +
 Last, let's use the OpenShift console to connect to the VM
 
-* Navigate to the `VirtualMachines` sub-menu of the `Virtualization` menu (make sure you select the `my-vm-restore` project ), and check the list of VM:
+* Navigate to the *VirtualMachines* sub-menu of the *Virtualization* menu (make sure you select the *my-vm-restore* project ), and check the list of VM:
 
 image::Mod7_OCP_Console_VM_List.png[VM List]
 
@@ -100,7 +102,7 @@ image::Mod7_OCP_Console_VM_List.png[VM List]
 
 image::Mod7_OCP_Console_VM_Details.png[VM Details]
 
-* After pressing on the `Guest login credentials`, copy and paste the user name and password, then click on the VM console
+* After pressing on the *Guest login credentials*, copy and paste the user name and password, then click on the VM console
 
 * You can then check the content you created earlier:
 
@@ -117,36 +119,38 @@ myfile.txt
 this is my file
 ----
 
-And voilà ! You have quickly demonstrated how to restore a VM from a snapshot in just a few seconds.
+And voilà!
+You have quickly demonstrated how to restore a VM from a snapshot in just a few seconds.
 
 [#vmadd]
 == Replicate a second VM
 
 In this chapter, you are going to perform 2 tasks:
 
-* Add a new VM to existing `my-vm` project
+* Add a new VM to existing *my-vm* project
 * Failover the Trident Protect app
 
 The goal is to showcase that since the app is defined at the namespace level, any addition to that project will also be automatically replicated to the DR cluster.
 
 === Add a second VM on the PROD cluster
 
-First, make sure you are connected to the PROD cluster console, in the `my-vm` project. Then you can:
+First, make sure you are connected to the PROD cluster console, in the *my-vm* project. Then you can:
 
-* either create a whole new Centos9 VM, following the same steps used in Module03
+* either create a whole new Centos9 VM, following the same steps used in Module 3
 * or clone the existing VM which also would take a couple of minutes to complete
 
 [NOTE]
 ====
 To clone the VM, following those steps:
 
-* in the VM window, click on the `Actions` menu (top/right of the screen)
-* select `clone`
+* in the VM window, click on the *Actions* menu (top/right of the screen)
+* select *clone*
 * optionally change the name
-* select `Start VirtualMachine once created`
+* select *Start VirtualMachine once created*
 ====
 
-Trident Protect will automatically synchronize the new content of the project with the AMR configured previously. Wait a few minutes for the cloned VM to be fully deployed and for the next data synchronization to complete. 
+Trident Protect will automatically synchronize the new content of the project with the AMR configured previously.
+Wait a few minutes for the cloned VM to be fully deployed and for the next data synchronization to complete.
 
 === Failover the namespace with 2 VM
 
@@ -159,7 +163,7 @@ Let's failover once again your app, and check the result.
 oc config use-context DR
 oc patch amr vmamr1 -n vmdr --type=merge -p '{"spec":{"desiredState":"Promoted"}}'
 ----
-Fairly quickly, you should get to the following status (`Promoting` followed by `Promoted`)
+Fairly quickly, you should get to the following status (*Promoting* followed by *Promoted*)
 [.lines_space]
 [.console-input]
 [source,bash,role=execute]
@@ -202,7 +206,7 @@ image::Mod7_OCP_Console_DR_2VMs.png[two VMs]
 [#wordpress]
 == Disaster Recovery for your Wordpress application
 
-You can follow here the same methodology you applied in the _Module-06_ for the Virtual Machine.
+You can follow here the same methodology you applied in Module 6 for the Virtual Machine.
 
 === Setup the mirroring
 
@@ -271,7 +275,7 @@ tridentctl-protect get amr -n wordpressdr
 |  wpamr1  |  lab-vault   |    lab-vault    | Established   | Establishing | 41s |       |
 +----------+--------------+-----------------+---------------+--------------+-----+-------+
 ----
-It will take a couple of minutes for the mirroring to be setup, or `Established` in the Trident language.
+It will take a couple of minutes for the mirroring to be setup, or *Established* in the Trident language.
 [.lines_space]
 [.console-input]
 [source,bash,role=execute]
@@ -331,7 +335,7 @@ tridentctl-protect get amr -n wordpressdr
 +----------+--------------+-----------------+---------------+-------------+-------+-------+
 ----
 
-Once in the `Promoted` state, let's check the content of our namespace:
+Once in the *Promoted* state, let's check the content of our namespace:
 [.lines_space]
 [.console-input]
 [source,bash,role=execute]
@@ -358,4 +362,5 @@ persistentvolumeclaim/wordpress                  Bound    pvc-29440095-169e-4524
 As you can see, everything is back! +
 If you connect on your browser to the FQDN provided by the LoadBalancer, you should be able to connect to Wordpress and see the content create in the Module-03.
 
-If you have reached this point, congratulations, you have succesfully completed this lab! And you've learned how to provide fast and efficient backup, restore and disaster recovery for container and VM workloads on OpenShift. 
+If you have reached this point, congratulations, you have succesfully completed this lab!
+And you've learned how to provide fast and efficient backup, restore and disaster recovery for container and VM workloads on OpenShift.
