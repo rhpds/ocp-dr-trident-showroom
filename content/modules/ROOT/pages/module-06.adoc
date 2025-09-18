@@ -1,16 +1,19 @@
 # Module 6: Disaster Recovery Plan for your VM
 
-For this module, make sure you are connected to the OpenShift PROD Console, then switch to the Virtualization Tab and make sure the `my-vm` project is selected. Finally enter the VM detail page.
+For this module, make sure you are connected to the OpenShift PROD Console, then switch to the Virtualization Tab and make sure the *my-vm* project is selected.
+Finally enter the VM detail page.
 
 == Virtual Machine customization
 
-* Navigate to the {rosa_prod_openshift_console_url}[OpenShfit PROD console,window=_blank], and navigate to the *Virtualization* -> *VirtualMachines* menu.
+* Navigate to the {rosa_prod_openshift_console_url}[OpenShfit PROD console,window=_blank], and navigate to the *Virtualization -> VirtualMachines* menu.
 
-* Now that the Virtual Machine is running, you can start adding some content. Press the *Open Web console* link
+* Now that the Virtual Machine is running, you can start adding some content.
+Press the *Open Web console* link
 
 image::Mod6_OCP_Console_VM_Running_OpenWebConsole.png[Open Web Console]
 
-* This opens a new window. First Press on the *Guest login credentials* link, and use the information you see to log into the system
+* This opens a new window.
+First Press on the *Guest login credentials* link, and use the information you see to log into the system
 
 image::Mod6_OCP_Console_CentOS_console.png[CentOS console]
 
@@ -27,7 +30,8 @@ You can now close that Web Console.
 
 == Disaster Recovery Configuration
 
-Time to protect this very critical workloads! Instead of a backup, we will setup a regular data replication, creating a warm standby on our DR cluster so we can quickly failover in case of a disaster. +
+Time to protect this very critical workloads!
+Instead of a backup, we will setup a regular data replication, creating a warm standby on our DR cluster so we can quickly failover in case of a disaster. +
 We are going to use the CLI to perform that operation. +
 
 Make sure you are connected on the PROD cluster:
@@ -287,8 +291,10 @@ It will become *Read-Write* once you fail over the VM.
 [#failover]
 == Failover your VM
 
-Failover your VM is pretty straight forward. You just need to _patch_ the AMR on the DR cluster. +
-This will break the mirror relationship, which in turn changes the volumes from *Read-Only* to *Read-Write*. From there, Trident Protect will redeploy all the protected objects on top of the PVC so you get your VM back, up & running.
+Failover your VM is pretty straight forward.
+You just need to _patch_ the AMR on the DR cluster. +
+This will break the mirror relationship, which in turn changes the volumes from *Read-Only* to *Read-Write*.
+From there, Trident Protect will redeploy all the protected objects on top of the PVC so you get your VM back, up & running.
 
 [.lines_space]
 [.console-input]
@@ -350,7 +356,7 @@ If you needed to tailor the target VM, you could setup a PostFailover Hook with 
 
 == Check the result
 
-Connect to the {rosa_dr_openshift_console_url}[OpenShift DR Console,window=_blank] and navigate to the *VirtualMachines* menu. +
+Connect to the {rosa_dr_openshift_console_url}[OpenShift DR Console,window=_blank] and navigate to the *Virtualization -> VirtualMachines* menu. +
 Log into the console and verify what our test file is there. Everything is failed over from the production cluster.
 
 * Connect to the {rosa_dr_openshift_console_url}[OpenShift DR Console,window=_blank] and navigate to the *VirtualMachines* menu:
@@ -434,9 +440,11 @@ NOTE: You may see a temporary warning message if you refresh too quickly. Do no 
 
 [IMPORTANT]
 ====
-Resynchronizing the mirror will stop and delete everything but the PVC on the DR site. When an AMR is established, the only object you can see in the DR namespce is the PVC. +
+Resynchronizing the mirror will stop and delete everything but the PVC on the DR site.
+When an AMR is established, the only object you can see in the DR namespce is the PVC. +
 This PVC is back on *ReadOnly* mode as it is the target of the mirror relationship. +
 Everything is now ready for another DR failover to this cluster.
 ====
 
-You are now done with this module. Please proceed with the next one.
+You are now done with this module.
+Please proceed with the next one.
