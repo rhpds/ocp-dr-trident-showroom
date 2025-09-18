@@ -76,7 +76,7 @@ NOTE: It takes a tiny bit more than a minute for the installation to complete.
 
 === Verify the installation
 
-Check the content of the `wordpress` namespace.
+Check the content of the *wordpress* namespace.
 [.lines_space]
 [.console-input]
 [source,bash,role=execute]
@@ -123,13 +123,13 @@ oc get -n wordpress svc wordpress -o=jsonpath='{.status.loadBalancer.ingress[0].
 
 Before protecting that application, you may want to create your own blog. +
 You first need to connect to the admin page (use the same URL as Wordpress followed by "/wp-admin"). +
-This will ask for credentials, which you set in the Helm chart (`rosa`/`Rosa12345`).
+This will ask for credentials, which you set in the Helm chart: `rosa`/`Rosa12345`.
 
-Once logged in, you need to click on `Posts` in the left bar, and then press on the `Add New Post` button.
+Once logged in, you need to click on *Posts* in the left bar, and then press on the *Add New Post* button.
 
 image::Mod3_Wordpress_Admin_AddNewPost.png[AddNewPost]
 
-Write Something nice or funny, and when ready press on the two successive `Publish` buttons. +
+Write Something nice or funny, and when ready press on the two successive *Publish* buttons. +
 In another window, connect to the main page of the Wordpress user site to visualize the result.
 
 image::Mod3_Wordpress_FirstPost.png[FirstPost]
@@ -149,23 +149,25 @@ For this chapter, most tasks are going to be done in the OpenShift GUI.
 ** *user*: `{rosa_prod_openshift_admin_user}`
 ** *password*: `{rosa_prod_openshift_admin_password}`
 
-* Navigate to Home --> Projects and create a new project by using the `Create Project` button on the top right. Name the project `my-vm`
+* Navigate to *Home -> Projects* and create a new project by using the *Create Project* button on the top right.
+Name the project `my-vm`
 
 image::Mod3_OCP_Console_Project_Create.png[projectCreation]
 
 === VM creation
 
-* Navigate to the `VirtualMachines` sub-menu of the `Virtualization` menu (make sure you are on the right project), press `Create `Virtual Machine` and then choose `From template`
+* Navigate to the *VirtualMachines* sub-menu of the *Virtualization* menu (make sure you are on the right project), press *Create *Virtual Machine* and then choose *From template*
 
 image::Mod3_OCP_Console_VM_Create.png[VMCreation]
 
-* Select the `CentOS Stream 9 VM` template. This will open a new form.
+* Select the *CentOS Stream 9 VM* template.
+This will open a new form.
 
 image::Mod3_OCP_Console_VM_Centos_template.png[VMTemplate, 220, 220]
 
 [NOTE]
 ====
-As you can see, the template you are selecting is labelled `Source available`. +
+As you can see, the template you are selecting is labelled *Source available*. +
 This means that the corresponding image volume exists on this cluster with the default storage class configured for Virtual Machines.
 ====
 
@@ -200,10 +202,12 @@ persistentvolumeclaim/centos-stream9-boston   Bound    pvc-3d6b8ffd-0483-44b5-9b
 ----
 As you can see, the creation was super fast. +
 
-NOTE: If the Template Image disk was on a different storage class, the process would have taken much longer (about 10 minutes), as it would first need to copy the data into a different volume. Due to the NetApp ONTAP cloning technology being used in this setup, creation of the VM disk is always fast, independent of the template size.
+NOTE: If the Template Image disk was on a different storage class, the process would have taken much longer (about 10 minutes), as it would first need to copy the data into a different volume.
+Due to the NetApp ONTAP cloning technology being used in this setup, creation of the VM disk is always fast, independent of the template size.
 
 * You can also see the status of the VM in the Console:
 
 image::Mod3_OCP_Console_VM_Running.png[VM Running]
 
-* You are now done with this module. Please proceed with the next one.
+* You are now done with this module.
+Please proceed with the next one.
