@@ -180,7 +180,8 @@ First, you can notice that Trident Protect created some sub-folders to copy the 
 [source,bash,role=execute,subs="attributes"]
 ----
 BUCKETFOLDERS=$(oc -n wordpress get backup wpbkp1 -o=jsonpath='{.status.appArchivePath}' | awk -F '/' '{print $1}')
-aws s3 ls --no-verify-ssl --endpoint-url http://s3.{aws_default_region}.amazonaws.com s3://{s3_bucket_name}/$BUCKETFOLDERS/
+echo "BUCKETFOLDERS: $BUCKETFOLDERS"
+aws s3 ls --profile dr --no-verify-ssl --endpoint-url http://s3.{aws_default_region}.amazonaws.com s3://{s3_bucket_name}/$BUCKETFOLDERS/
 ----
 [.console-output]
 [source,bash]
@@ -199,6 +200,7 @@ Then, you can also parse the content of the backup:
 [source,bash,role=execute,subs="attributes"]
 ----
 BKPPATH=$(oc -n wordpress get backup wpbkp1 -o=jsonpath='{.status.appArchivePath}')
+echo "BKPPATH: $BKPPATH"
 aws s3 ls --no-verify-ssl --endpoint-url http://s3.{aws_default_region}.amazonaws.com s3://{s3_bucket_name}/$BKPPATH --recursive --summarize --human-readable
 ----
 
@@ -338,7 +340,8 @@ Let's put the path of the manual backup in a variable and proceed with the resto
 [.console-input]
 [source,bash,role=execute]
 ----
-BKPPATH=$(tridentctl-protect get appvaultcontent lab-vault --app wordpress --show-resources backup --show-paths -n trident-protect | grep wpbkp1  | awk -F '|' '{print $8}')
+BKPPATH=$(tridentctl-protect get appvaultcontent lab-vault --app wordpress --show-resources backup --show-paths -n trident-protect | grep wpbkp1  | awk -F '|' '{print $10}')
+echo "BKPPATH: $BKPPATH"
 
 tridentctl-protect create br wpbr1 --namespace-mapping wordpress:wordpressrestore --appvault lab-vault -n wordpressrestore \
   --storageclass-mapping storage-class-nfs:storage-class-iscsi \
