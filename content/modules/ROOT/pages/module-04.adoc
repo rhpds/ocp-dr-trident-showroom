@@ -64,7 +64,7 @@ trident-protect-controller-manager-7cdff78665-brjxk            2/2     Running  
 ----
 [NOTE]
 ====
-Another pod (`autosupportbundle`) should eventually appear. +
+Another pod (*autosupportbundle*) should eventually appear. +
 Its role is to generate support data and send telemetry to NetApp Support.
 ====
 
@@ -109,7 +109,8 @@ snapshots.protect.trident.netapp.io                    2025-03-17T14:23:58Z
 ====
 According to the OpenShift Container Platform documentation:
 
-* In the Kubernetes API, a _resource_ is an endpoint that stores a collection of API objects of a certain kind. For example, the built-in `Pods` resource contains a collection of `Pod` objects.
+* In the Kubernetes API, a _resource_ is an endpoint that stores a collection of API objects of a certain kind.
+For example, the built-in *Pods* resource contains a collection of *Pod* objects.
 * A _custom resource definition_ (CRD) object defines a new, unique object type, called a _kind_, in the cluster and lets the Kubernetes API server handle its entire lifecycle.
 
 For instance, Trident Protect created a new CRD called _applications.protect.trident.netapp.io_, which shortcut is _application_. +
@@ -146,7 +147,8 @@ You first need to create two secrets:
 oc create secret generic -n trident-protect aws-s3-keys --from-literal=accessKeyID={aws_access_key_id} --from-literal=secretAccessKey={aws_secret_access_key}
 oc create secret generic -n trident-protect appvault-secret --from-literal=KOPIA_PASSWORD=mypassword
 ----
-CAUTION: Please *_do not_* change that appvault-secret password as the same bucket is used for both production and DR environments to allow for disaster recovery/failover. The AppVault is already configured with this password on the production environment
+CAUTION: Please *_do not_* change that appvault-secret password as the same bucket is used for both production and DR environments to allow for disaster recovery/failover.
+The AppVault is already configured with this password on the production environment
 
 [.console-output]
 [source,bash]
@@ -155,7 +157,8 @@ secret/aws-s3-keys created
 secret/appvault-secret created
 ----
 
-You are now ready to proceed with the AppVault creation, which is done in the _trident-protect_ namespace. We will use the tridentctl-protect tool here, but you can achieve the same via declarative YAML manifests, ready to be included in your GitOps pipeline.
+You are now ready to proceed with the AppVault creation, which is done in the _trident-protect_ namespace.
+We will use the tridentctl-protect tool here, but you can achieve the same via declarative YAML manifests, ready to be included in your GitOps pipeline.
 [.lines_space]
 [.console-input]
 [source,bash,role=execute,subs="attributes"]
@@ -175,7 +178,6 @@ tridentctl-protect get appvault -n trident-protect
 
 You might have to wait a few seconds and repeat the last command until the state is "Available".
 
-
 [NOTE]
 ====
 In a production environment, the administrator may also perform the following tasks:
@@ -194,4 +196,5 @@ Trident Protect will take care of copying the application metadata between both 
 As we are going to run the whole lab as an admin, the setup of fine-grained RBAC for backup & restore is not covered.
 For further details on access control, please refer to this https://docs.netapp.com/us-en/trident/trident-protect/manage-authorization-access-control.html[link,window="_blank"] icon:external-link[]
 
-You are now done with this module. Please proceed with the next one.
+You are now done with this module.
+Please proceed with the next one.
