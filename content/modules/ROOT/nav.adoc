@@ -1,7 +1,7 @@
 
 * xref:index.adoc[Lab description]
 
-* xref:module-01.adoc[Lab introduction]
+* xref:module-01.adoc[Introduction & Overview]
 
 * xref:module-02.adoc[Install and configure Trident in OpenShift]
 ** xref:module-02.adoc#operatorinstall[Install the Trident Operator]
