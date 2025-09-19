@@ -181,7 +181,7 @@ First, you can notice that Trident Protect created some sub-folders to copy the 
 ----
 BUCKETFOLDERS=$(oc -n wordpress get backup wpbkp1 -o=jsonpath='{.status.appArchivePath}' | awk -F '/' '{print $1}')
 echo "BUCKETFOLDERS: $BUCKETFOLDERS"
-aws s3 ls --profile dr --no-verify-ssl --endpoint-url http://s3.{aws_default_region}.amazonaws.com s3://{s3_bucket_name}/$BUCKETFOLDERS/
+aws s3 ls --profile prod --no-verify-ssl --endpoint-url http://s3.{aws_default_region}.amazonaws.com s3://{s3_bucket_name}/$BUCKETFOLDERS/
 ----
 [.console-output]
 [source,bash]
@@ -201,7 +201,7 @@ Then, you can also parse the content of the backup:
 ----
 BKPPATH=$(oc -n wordpress get backup wpbkp1 -o=jsonpath='{.status.appArchivePath}')
 echo "BKPPATH: $BKPPATH"
-aws s3 ls --no-verify-ssl --endpoint-url http://s3.{aws_default_region}.amazonaws.com s3://{s3_bucket_name}/$BKPPATH --recursive --summarize --human-readable
+aws s3 ls --profile prod --no-verify-ssl --endpoint-url http://s3.{aws_default_region}.amazonaws.com s3://{s3_bucket_name}/$BKPPATH --recursive --summarize --human-readable
 ----
 
 [#schedule]
