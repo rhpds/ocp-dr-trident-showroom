@@ -3,7 +3,7 @@ name: github pages
 on:
   workflow_dispatch:
   push:
-    branches: [containers-as-bonus]
+    branches: [main]
     paths-ignore:
       - "README.adoc"
       - ".gitignore"
