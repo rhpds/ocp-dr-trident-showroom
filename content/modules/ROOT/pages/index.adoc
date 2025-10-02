@@ -11,25 +11,23 @@ NOTE: Both Trident and Trident Protect are already installed on the primary clus
 
 Here is your agenda for today...
 
-. Module 1: Introduction & Overview
-. Module 2 (Admin persona): 
-.. Install and configure Trident in OpenShift (in secondary cluster)
-. Module 3 (User persona):
-.. Provision container workloads
+. Introduction & Overview
+. Install and configure Trident in OpenShift (in secondary cluster) (Admin persona)
+. Install and configure Trident protect in OpenShift (in secondary cluster) (Admin persona)
+. Backup, Restore, and Failover for VMs (User persona)
 .. Provision VMs in OpenShift Virtualization
-. Module 4 (Admin persona):
-.. Install and configure Trident Protect in OpenShift (in secondary cluster)
-. Module 5 (User persona): 
-.. Backup/Restore container workloads
-. Module 6 (User persona): 
 .. Configure storage replication for VM workloads
 .. Perform a Failover for VM workloads
-. Module 7 (Bonus):
+. Bonus 1: More Virtual Machine features (User persona)
 .. Restore a Virtual Machine from a snapshot
 .. Add a second Virtual Machine to the project and test the failover
+. Bonus 2: Backup, Restore, and Failover for container workloads (User persona)
+.. Provision container workloads
+.. Backup/Restore container workloads
 .. Configure storage replication for container workloads
 .. Perform the Failover and Failback for container workloads
 
+.. Provision container workloads
 [[lab-setup]]
 == Lab Setup
 

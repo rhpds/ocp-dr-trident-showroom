@@ -1,4 +1,4 @@
-# Module 4: Install and configure Trident Protect on the DR OpenShift cluster
+# Install and configure Trident Protect on the DR OpenShift cluster
 
 Trident Protect is installed with a Helm Chart, which makes the experience pretty easy. +
 This task is usually performed by the Kubernetes admin.

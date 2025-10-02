@@ -1,4 +1,12 @@
-# Backup/Restore container workloads
+= Bonus Module: Backup, Restore, and Disaster Recovery for Container workloads
+
+In this chapter, you will perform the following tasks:
+
+* Create a containerized workload with the _cli_
+* Backup/Restore container workloads
+* Disaster Recovery for your Wordpress application
+
+== Introduction
 
 Trident Protect can help you protect *applications*.
 
@@ -30,6 +38,147 @@ Trident Protect uses *hooks* to perform some tasks, such as requesting data flus
 ====
 
 Enough reading for now, let's protect WordPress!
+
+== OpenShift context management
+
+At this point, you already logged in both ROSA clusters. +
+When using the `oc` tool, you can easily switch between clusters, by using the command `oc config use-context`. +
+
+However, as the context names are pretty long, it is a good practice to rename them with the `oc config rename-context` command to avoid typing errors.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config rename-context $(oc config get-contexts | grep -E default.*api-prod | cut -c 11- | awk '{print $1}') PROD
+oc config rename-context $(oc config get-contexts | grep -E default.*api-dr | cut -c 11- | awk '{print $1}') DR
+----
+
+Let's quickly check this was succesfully applied:
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config get-contexts
+----
+[.console-output]
+[source,bash]
+----
+CURRENT   NAME   CLUSTER                                         AUTHINFO                                                      NAMESPACE
+          DR     api-dr-p4p6h-t9k7-p1-openshiftapps-com:6443     cluster-admin/api-dr-p4p6h-t9k7-p1-openshiftapps-com:6443     default
+*         PROD   api-prod-p4p6h-jtx8-p1-openshiftapps-com:6443   cluster-admin/api-prod-p4p6h-jtx8-p1-openshiftapps-com:6443   default
+----
+
+You should already be logged into the PROD environment, as indicated by the `*` in the first column of the output. +
+In case you need to switch back to it, here is the command to run:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config use-context PROD
+----
+
+Time to deploy workloads!
+
+[#deploywordpress]
+== Deploy the Wordpress Helm chart
+
+This is going to be done using the cli.
+
+=== Wordpress installation
+
+Wordpress is widely known as a blogging and content management platform. +
+Let's deploy it on the production cluster with the help of a Helm chart.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+helm repo add bitnami https://charts.bitnami.com/bitnami
+
+helm install wordpress bitnami/wordpress -n wordpress --create-namespace
+--set wordpressUsername=rosa
+--set wordpressPassword=Rosa12345
+--set global.storageClass=storage-class-nfs
+--set wordpressBlogName="Best Blog Ever"
+--set image.registry=docker.io
+--set image.repository=bitnamilegacy/wordpress
+--set mariadb.image.registry=docker.io
+--set mariadb.image.repository=bitnamilegacy/mariadb
+--set global.security.allowInsecureImages=true
+----
+
+NOTE: It takes a tiny bit more than a minute for the installation to complete.
+
+[WARNING]
+====
+This helm chart has been deprecated by Bitnami, and will not be receiving further updates.
+Contact the Red Hat Demo Platform team if you have trouble deploying this.
+====
+
+=== Verify the installation
+
+Check the content of the *wordpress* namespace.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get -n wordpress svc,po,pvc
+----
+[.console-output]
+[source,bash]
+----
+NAME                                 TYPE           CLUSTER-IP       EXTERNAL-IP                                                               PORT(S)                      AGE
+service/wordpress                    LoadBalancer   172.30.57.162    aa7ccfdb52de24e73867ae11c11bedc0-1849430877.us-east-2.elb.amazonaws.com   80:30087/TCP,443:32446/TCP   10m
+service/wordpress-mariadb            ClusterIP      172.30.248.149   <none>                                                                    3306/TCP                     10m
+service/wordpress-mariadb-headless   ClusterIP      None             <none>                                                                    3306/TCP                     10m
+
+NAME                             READY   STATUS    RESTARTS   AGE
+pod/wordpress-74d5d98bcc-5hnhz   1/1     Running   0          10m
+pod/wordpress-mariadb-0          1/1     Running   0          10m
+
+NAME                                             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS        VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-wordpress-mariadb-0   Bound    pvc-9b53fcd7-09a9-4ce8-9b8e-9b24c22cd3ee   8Gi        RWO            storage-class-nfs   <unset>                 10m
+persistentvolumeclaim/wordpress                  Bound    pvc-774a516b-2205-462f-bf5d-d4014e37c72b   10Gi       RWO            storage-class-nfs   <unset>                 10m
+----
+
+You might have to wait a few more seconds and then repeat the above command until both pods show a staus of "Ready 1/1".
+
+Notice the wordpress service ? +
+Copy & paste the address (the _EXTERNAL-IP_) provided by the Load Balancer in your browser and prepend `https://` in order to access WordPress:
+
+image::Mod3_Wordpress_HelloWorld.png[HelloWorld]
+
+[NOTE]
+====
+You could also retrieve this address by running the following command:
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get -n wordpress svc wordpress -o=jsonpath='{.status.loadBalancer.ingress[0].hostname}';echo
+----
+====
+
+=== Create your own blog
+
+Before protecting that application, you may want to create your own blog. +
+You first need to connect to the admin page (use the same URL as Wordpress followed by "/wp-admin"). +
+This will ask for credentials, which you set in the Helm chart: `rosa`/`Rosa12345`.
+
+Once logged in, you need to click on *Posts* in the left bar, and then press on the *Add New Post* button.
+
+image::Mod3_Wordpress_Admin_AddNewPost.png[AddNewPost]
+
+Write Something nice or funny, and when ready press on the two successive *Publish* buttons. +
+In another window, connect to the main page of the Wordpress user site to visualize the result.
+
+image::Mod3_Wordpress_FirstPost.png[FirstPost]
+
+Tadaaaa! +
+Your first application is now ready.
 
 [#creation]
 == Create a Trident Protect application for the Wordpress namespace
@@ -416,5 +565,164 @@ oc get -n wordpressrestore svc wordpress -o=jsonpath='{.status.loadBalancer.ingr
 Tadaaaaa! Your great blog is back online! +
 You just managed to restore your whole application including its data onto a different cluster.
 
-You are now done with this module.
-Please proceed with the next one.
+[#drwordpress]
+== Disaster Recovery for your Wordpress application
+
+You can follow here the same methodology you applied in DR for the Virtual Machine.
+
+=== Setup the mirroring
+
+You first need to retrieve the application ID on the PROD cluster using the command line. +
+We will use the _oc config_ command line to switch between clusters context.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config use-context PROD
+SRCAPPID=$(tridentctl-protect get app wordpress -n wordpress -o json | jq -r .metadata.uid) && echo $SRCAPPID
+----
+
+With that information, you can create the mirror relationship on the DR cluster. +
+
+Let's first switch context to point to the DR cluster:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config use-context DR
+----
+
+As we use a YAML manifest, you also need to create the target namespace on the DR cluster.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc create ns wordpressdr
+
+cat << EOF | oc apply -f -
+apiVersion: protect.trident.netapp.io/v1
+kind: AppMirrorRelationship
+metadata:
+  name: wpamr1
+  namespace: wordpressdr
+spec:
+  desiredState: Established
+  destinationAppVaultRef: lab-vault
+  namespaceMapping:
+  - destination: wordpressdr
+    source: wordpress
+  recurrenceRule: |-
+    DTSTART:20240901T000200Z
+    RRULE:FREQ=MINUTELY;INTERVAL=5
+  sourceAppVaultRef: lab-vault
+  sourceApplicationName: wordpress
+  sourceApplicationUID: $SRCAPPID
+  storageClassName: storage-class-nfs
+EOF
+----
+Let's check the status of this new object on the DR cluster:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get amr -n wordpressdr
+----
+[.console-output]
+[source,bash]
+----
++----------+--------------+-----------------+---------------+--------------+-----+-------+
+|   NAME   |  SOURCE APP  | DESTINATION APP | DESIRED STATE |     STATE    | AGE | ERROR |
++----------+--------------+-----------------+---------------+--------------+-----+-------+
+|  wpamr1  |  lab-vault   |    lab-vault    | Established   | Establishing | 41s |       |
++----------+--------------+-----------------+---------------+--------------+-----+-------+
+----
+It will take a couple of minutes for the mirroring to be setup, or *Established* in the Trident language.
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get amr -n wordpressdr
+----
+[.console-output]
+[source,bash]
+----
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+|   NAME   |  SOURCE APP  | DESTINATION APP | DESIRED STATE |    STATE    |  AGE  | ERROR |
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+|  wpamr1  |  lab-vault   |    lab-vault    | Established   | Established |  1m30 |       |
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+----
+Let's verify what we currently have in the target namespace:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get -n wordpressdr svc,po,pvc
+----
+[.console-output]
+[source,bash]
+----
+NAME                                             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS        VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-wordpress-mariadb-0   Bound    pvc-1fc62930-31da-4d2d-92ca-4449fe13211c   8Gi        RWO            storage-class-nfs   <unset>                 2m35s
+persistentvolumeclaim/wordpress                  Bound    pvc-29440095-169e-4524-94f7-e45e03e1e2d6   10Gi       RWO            storage-class-nfs   <unset>                 2m35s
+----
+As expected, you only see the PVC for now.
+
+=== Failover your application
+
+Failover your application is pretty straight forward. +
+You just need to _patch_ the AMR on the DR cluster.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc patch amr wpamr1 -n wordpressdr --type=merge -p '{"spec":{"desiredState":"Promoted"}}'
+----
+Fairly quickly, you should get to the following result:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+tridentctl-protect get amr -n wordpressdr
+----
+[.console-output]
+[source,bash]
+----
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+|   NAME   |  SOURCE APP  | DESTINATION APP | DESIRED STATE |    STATE    |  AGE  | ERROR |
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+|  wpamr1  |  lab-vault   |    lab-vault    |   Promoted    |   Promoted  |  20s  |       |
++----------+--------------+-----------------+---------------+-------------+-------+-------+
+----
+
+Once in the *Promoted* state, let's check the content of our namespace:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc get -n wordpressdr svc,po,pvc
+----
+[.console-output]
+[source,bash]
+----
+NAME                                 TYPE           CLUSTER-IP       EXTERNAL-IP                                                              PORT(S)                      AGE
+service/wordpress                    LoadBalancer   172.30.104.107   a6fe2051eeb554284a7b3d398c119b63-831257922.us-east-2.elb.amazonaws.com   80:30175/TCP,443:30394/TCP   70s
+service/wordpress-mariadb            ClusterIP      172.30.227.139   <none>                                                                   3306/TCP                     69s
+service/wordpress-mariadb-headless   ClusterIP      None             <none>                                                                   3306/TCP                     69s
+
+NAME                             READY   STATUS    RESTARTS   AGE
+pod/wordpress-64f8c88c45-hns76   1/1     Running   0          70s
+pod/wordpress-mariadb-0          1/1     Running   0          69s
+
+NAME                                             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS        VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-wordpress-mariadb-0   Bound    pvc-1fc62930-31da-4d2d-92ca-4449fe13211c   8Gi        RWO            storage-class-nfs   <unset>                 5m4s
+persistentvolumeclaim/wordpress                  Bound    pvc-29440095-169e-4524-94f7-e45e03e1e2d6   10Gi       RWO            storage-class-nfs   <unset>                 5m4s
+----
+
+As you can see, everything is back! +
+If you connect on your browser to the FQDN provided by the LoadBalancer, you should be able to connect to Wordpress and see the content created earlier.
+
+If you have reached this point, congratulations, you have succesfully completed this lab!
+And you've learned how to provide fast and efficient backup, restore and disaster recovery for container and VM workloads on OpenShift.

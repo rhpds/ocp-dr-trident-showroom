@@ -1,6 +1,6 @@
-# Module 2: Install and configure Trident on the DR OpenShift cluster
+# Install and configure Trident on the DR OpenShift cluster
 
-NOTE: Trident is already installed and configured on the PROD cluster.
+NOTE: Trident is already installed and configured on the PROD cluster.  You will now install it on the DR cluster.
 
 This task is generally done by the OpenShift administrator.
 
