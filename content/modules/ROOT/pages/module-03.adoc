@@ -65,14 +65,25 @@ Let's deploy it on the production cluster with the help of a Helm chart.
 ----
 helm repo add bitnami https://charts.bitnami.com/bitnami
 
-helm install wordpress bitnami/wordpress --version 24.1.18 -n wordpress --create-namespace \
-  --set wordpressUsername=rosa \
-  --set wordpressPassword=Rosa12345 \
-  --set global.storageClass=storage-class-nfs \
-  --set wordpressBlogName="Best Blog Ever"
+helm install wordpress bitnami/wordpress -n wordpress --create-namespace
+--set wordpressUsername=rosa
+--set wordpressPassword=Rosa12345
+--set global.storageClass=storage-class-nfs
+--set wordpressBlogName="Best Blog Ever"
+--set image.registry=docker.io
+--set image.repository=bitnamilegacy/wordpress
+--set mariadb.image.registry=docker.io
+--set mariadb.image.repository=bitnamilegacy/mariadb
+--set global.security.allowInsecureImages=true
 ----
 
 NOTE: It takes a tiny bit more than a minute for the installation to complete.
+
+[WARNING]
+====
+This helm chart has been deprecated by Bitnami, and will not be receiving further updates.
+Contact the Red Hat Demo Platform team if you have trouble deploying this.
+====
 
 === Verify the installation
 
