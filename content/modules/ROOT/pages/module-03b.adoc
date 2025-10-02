@@ -1,6 +1,4 @@
-// THIS MODULE HAS BEEN INTEGRATED INTO FOLLOWING MODULES
-
-# Module 3: Provision workloads
+# Module 3: Provision Containerized workloads
 
 In this chapter, you will perform the following tasks:
 
@@ -149,78 +147,6 @@ image::Mod3_Wordpress_FirstPost.png[FirstPost]
 
 Tadaaaa! +
 Your first application is now ready.
-
-[#deployvm]
-== Deploy a simple VM with a Block RWX volume
-
-For this chapter, most tasks are going to be done in the OpenShift GUI.
-
-=== Project creation
-
-* Log into the PROD OpenShift console
-** *URL*: {rosa_prod_openshift_console_url}[window=_blank] icon:external-link[]
-** *user*: `{rosa_prod_openshift_admin_user}`
-** *password*: `{rosa_prod_openshift_admin_password}`
-
-* Navigate to *Home -> Projects* and create a new project by using the *Create Project* button on the top right.
-Name the project `my-vm`
-
-image::Mod3_OCP_Console_Project_Create.png[projectCreation]
-
-=== VM creation
-
-* Navigate to the *VirtualMachines* sub-menu of the *Virtualization* menu (make sure you are on the right project), press *Create *Virtual Machine* and then choose *From template*
-
-image::Mod3_OCP_Console_VM_Create.png[VMCreation]
-
-* Select the *CentOS Stream 9 VM* template.
-This will open a new form.
-
-image::Mod3_OCP_Console_VM_Centos_template.png[VMTemplate, 220, 220]
-
-[NOTE]
-====
-As you can see, the template you are selecting is labelled *Source available*. +
-This means that the corresponding image volume exists on this cluster with the default storage class configured for Virtual Machines.
-====
-
-* Leave all the default parameters
-** including _Disk source = Template default_ (that will use the volume snapshot set during the optimization configuration in the previous module)
-** you can optionally change the VM name
-* Press `Quick create VirtualMachine`
-
-image::Mod3_OCP_Console_VM_Form.png[VM Form]
-
-=== Verify the objects related to that VM with the CLI
-
-Check the status of the VM and its disk/PVC volume.
-
-[.lines_space]
-[.console-input]
-[source,bash,role=execute]
-----
-oc -n my-vm get dv,vm,pvc
-----
-[.console-output]
-[source,bash]
-----
-NAME                                               PHASE       PROGRESS   RESTARTS   AGE
-datavolume.cdi.kubevirt.io/centos-stream9-boston   Succeeded   100.0%                38s
-
-NAME                                               AGE   STATUS    READY
-virtualmachine.kubevirt.io/centos-stream9-boston   38s   Running   True
-
-NAME                                          STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS          VOLUMEATTRIBUTESCLASS   AGE
-persistentvolumeclaim/centos-stream9-boston   Bound    pvc-3d6b8ffd-0483-44b5-9b0c-b0a51b528c40   30Gi       RWX            storage-class-iscsi   <unset>                 38s
-----
-As you can see, the creation was super fast. +
-
-NOTE: If the Template Image disk was on a different storage class, the process would have taken much longer (about 10 minutes), as it would first need to copy the data into a different volume.
-Due to the NetApp ONTAP cloning technology being used in this setup, creation of the VM disk is always fast, independent of the template size.
-
-* You can also see the status of the VM in the Console:
-
-image::Mod3_OCP_Console_VM_Running.png[VM Running]
 
 * You are now done with this module.
 Please proceed with the next one.
