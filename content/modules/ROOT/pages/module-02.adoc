@@ -511,6 +511,8 @@ rhel9-2f2cf92fff21             true         rhel9-2f2cf92fff21                  
 ====
 This process takes about three minutes.
 If you run this command several times you will see the DataVolume import processes run and then disappear.
+You might also see the resource type indicated in the output, like so: +
+`volumesnapshot.snapshot.storage.k8s.io/centos-stream10-d2d8f5434f68`
 ====
 
 Earlier, you defined AWS FSx as the default storage class for Virtual Machines. +
