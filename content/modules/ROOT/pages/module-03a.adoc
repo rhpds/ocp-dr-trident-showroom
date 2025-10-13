@@ -65,7 +65,7 @@ image::Mod3_OCP_Console_Project_Create.png[projectCreation]
 
 === VM creation
 
-* Navigate to the *VirtualMachines* sub-menu of the *Virtualization* menu (make sure you are on the right project), press *Create *Virtual Machine* and then choose *From template*
+* Navigate to the *VirtualMachines* sub-menu of the *Virtualization* menu (make sure you are on the right project), press *Create Virtual Machine* and then choose *From template*
 
 image::Mod3_OCP_Console_VM_Create.png[VMCreation]
 
