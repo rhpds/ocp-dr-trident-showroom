@@ -498,22 +498,20 @@ oc get dv,volumesnapshot,pvc -n openshift-virtualization-os-images --selector=cd
 [.console-output]
 [source,bash]
 ----
-NAME                                                     PHASE       PROGRESS   RESTARTS   AGE
-datavolume.cdi.kubevirt.io/centos-stream9-1920d484672d   Succeeded   100.0%                10h
-datavolume.cdi.kubevirt.io/fedora-4fcda30051d5           Succeeded   100.0%                10h
-datavolume.cdi.kubevirt.io/rhel10-beta-da1c0cdc24da      Succeeded   100.0%                10h
-datavolume.cdi.kubevirt.io/rhel8-833d0f124287            Succeeded   100.0%                10h
-datavolume.cdi.kubevirt.io/rhel9-0c9204ba64c2            Succeeded   100.0%                10h
-
-NAME                                                STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
-persistentvolumeclaim/centos-stream9-1920d484672d   Bound    pvc-97787e44-3e19-4bd0-be51-16a0bd2a6f79   30Gi       RWO            gp3            <unset>                 10h
-persistentvolumeclaim/fedora-4fcda30051d5           Bound    pvc-f403b3cd-6247-4839-8b58-ff23aac1a8da   30Gi       RWO            gp3            <unset>                 10h
-persistentvolumeclaim/rhel10-beta-da1c0cdc24da      Bound    pvc-042c4b71-b91c-4936-985e-9bd266938c98   30Gi       RWO            gp3            <unset>                 10h
-persistentvolumeclaim/rhel8-833d0f124287            Bound    pvc-96250ddf-3a1c-4814-851c-275035dd9548   30Gi       RWO            gp3            <unset>                 10h
-persistentvolumeclaim/rhel9-0c9204ba64c2            Bound    pvc-5d10c854-bf26-44eb-b261-356721e785ec   30Gi       RWO            gp3            <unset>                 10h
+NAME                           READYTOUSE   SOURCEPVC                      SOURCESNAPSHOTCONTENT   RESTORESIZE   SNAPSHOTCLASS     SNAPSHOTCONTENT                                    CREATIONTIME   AGE
+centos-stream10-d2d8f5434f68   true         centos-stream10-d2d8f5434f68                           30Gi          csi-trident-vsc   snapcontent-b8a2bd91-b142-4dbd-877d-96c464b6f827   5m4s           5m6s
+centos-stream9-1688a50b70d6    true         centos-stream9-1688a50b70d6                            30Gi          csi-trident-vsc   snapcontent-5eed626c-ad3f-4523-9c87-b9e45acc3d46   5m47s          5m47s
+fedora-4fcda30051d5            true         fedora-4fcda30051d5                                    30Gi          csi-trident-vsc   snapcontent-2ea95de0-f079-43cb-9977-ec33056c6fc4   5m2s           5m3s
+rhel10-be2560e5c97f            true         rhel10-be2560e5c97f                                    30Gi          csi-trident-vsc   snapcontent-4b30ebb2-208b-48f9-9636-c903fb7c5105   4m58s          4m59s
+rhel8-684cedbd2c18             true         rhel8-684cedbd2c18                                     30Gi          csi-trident-vsc   snapcontent-f3d27f57-c6e2-414d-9b38-0c50e8c3a9d4   5m3s           5m6s
+rhel9-2f2cf92fff21             true         rhel9-2f2cf92fff21                                     30Gi          csi-trident-vsc   snapcontent-2265468d-1b20-46b2-89c1-240c807b3c94   5m6s           5m6s
 ----
 
-NOTE: This process takes about three minutes.
+[NOTE]
+====
+This process takes about three minutes.
+If you run this command several times you will see the DataVolume import processes run and then disappear.
+====
 
 Earlier, you defined AWS FSx as the default storage class for Virtual Machines. +
 You can also verify this by running the following.
@@ -553,12 +551,12 @@ oc get dv -n openshift-virtualization-os-images
 [.console-output]
 [source,bash]
 ----
-NAME                                                     PHASE             PROGRESS   RESTARTS   AGE
-datavolume.cdi.kubevirt.io/centos-stream9-1920d484672d   Pending           N/A                   5s
-datavolume.cdi.kubevirt.io/fedora-4fcda30051d5           ImportScheduled   N/A                   5s
-datavolume.cdi.kubevirt.io/rhel10-beta-da1c0cdc24da      Pending           N/A                   5s
-datavolume.cdi.kubevirt.io/rhel8-833d0f124287                              N/A                   5s
-datavolume.cdi.kubevirt.io/rhel9-0c9204ba64c2                              N/A                   5s
+NAME                          PHASE             PROGRESS   RESTARTS   AGE
+centos-stream9-1920d484672d   Pending           N/A                   5s
+fedora-4fcda30051d5           ImportScheduled   N/A                   5s
+rhel10-beta-da1c0cdc24da      Pending           N/A                   5s
+rhel8-833d0f124287                              N/A                   5s
+rhel9-0c9204ba64c2                              N/A                   5s
 ----
 Give it a couple of minutes and run the command again:
 [.lines_space]
