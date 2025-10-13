@@ -46,12 +46,13 @@ image::Mod3_OCP_Console_VM_Form.png[VM Form]
 
 === Verify the objects related to that VM with the CLI
 
-Check the status of the VM and its disk/PVC volume.
+Switch back to the PROD context and check the status of the VM and its disk/PVC volume.
 
 [.lines_space]
 [.console-input]
 [source,bash,role=execute]
 ----
+oc config use-context PROD
 oc -n my-vm get dv,vm,pvc
 ----
 [.console-output]
