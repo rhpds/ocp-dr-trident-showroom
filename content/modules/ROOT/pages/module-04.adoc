@@ -145,7 +145,7 @@ You first need to create two secrets:
 [source,bash,role=execute,subs="attributes"]
 ----
 oc create secret generic -n trident-protect aws-s3-keys --from-literal=accessKeyID={aws_access_key_id} --from-literal=secretAccessKey={aws_secret_access_key}
-oc create secret generic -n trident-protect appvault-secret --from-literal=KOPIA_PASSWORD=mypassword
+oc create secret generic -n trident-protect appvault-secret --from-literal=KOPIA_PASSWORD={kopia_password}
 ----
 CAUTION: Please *_do not_* change that appvault-secret password as the same bucket is used for both production and DR environments to allow for disaster recovery/failover.
 The AppVault is already configured with this password on the production environment
