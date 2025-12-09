@@ -1,0 +1,77 @@
+=== Authenticate to the cluster
+
+NOTE: You can refer back to this page if you need the login info
+
+The bastion provided with the workshop has the `aws` and `rosa` command line tools already installed and logged in.  The `oc` command is installed, but not authenticated.
+
+To authenticate `oc` use this command for the DR environment:
+
+[.lines_space]
+[.console-input]
+[source,yaml,role=execute]
+----
+oc login -u {rosa_dr_openshift_admin_user} -p {rosa_dr_openshift_admin_password} {rosa_dr_openshift_console_url}
+----
+
+And use this command to login to the PROD environment:
+
+[.lines_space]
+[.console-input]
+[source,yaml,role=execute]
+----
+oc login -u {rosa_prod_openshift_admin_user} -p {rosa_prod_openshift_admin_password} {rosa_prod_openshift_console_url}
+----
+
+== OpenShift context management
+
+At this point, you are logged in both ROSA clusters on the command line. +
+When using the `oc` tool, you can easily switch between clusters, by using the command `oc config use-context`. +
+
+However, as the context names are pretty long, it is a good practice to rename them with the `oc config rename-context` command to avoid typing errors.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config rename-context $(oc config get-contexts | grep -E default.*api-prod | cut -c 11- | awk '{print $1}') PROD
+oc config rename-context $(oc config get-contexts | grep -E default.*api-dr | cut -c 11- | awk '{print $1}') DR
+----
+
+Let's quickly check this was succesfully applied:
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config get-contexts
+----
+[.console-output]
+[source,bash]
+----
+CURRENT   NAME   CLUSTER                                         AUTHINFO                                                      NAMESPACE
+          DR     api-dr-p4p6h-t9k7-p1-openshiftapps-com:6443     cluster-admin/api-dr-p4p6h-t9k7-p1-openshiftapps-com:6443     default
+*         PROD   api-prod-p4p6h-jtx8-p1-openshiftapps-com:6443   cluster-admin/api-prod-p4p6h-jtx8-p1-openshiftapps-com:6443   default
+----
+
+You should already be logged into the PROD environment, as indicated by the `*` in the first column of the output. +
+In case you need to switch back to it, here is the command to run:
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config use-context PROD
+----
+
+== OpenShift Console Login
+
+To connct top the *PROD* OpenShift console:
+
+** *URL*: {rosa_prod_openshift_console_url}[window=_blank] icon:external-link[]
+** *user*: `{rosa_prod_openshift_admin_user}`
+** *password*: `{rosa_prod_openshift_admin_password}`
+
+To connect to the *DR* OpenShift console:
+
+** *URL*: {rosa_dr_openshift_console_url}[window=_blank] icon:external-link[]
+** *user*: `{rosa_dr_openshift_admin_user}`
+** *password*: `{rosa_dr_openshift_admin_password}`
