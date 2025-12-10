@@ -10,8 +10,7 @@ NetApp Trident can be installed in various ways:
 * Using an operator
 * Using a Helm Chart (that installs the operator)
 
-Starting with NetApp Trident 25.02, this CSI driver is also available as a certified operator in the OperatorHub catalog. +
-You will use that method in this lab.
+Beginning with NetApp Trident 25.02, this CSI driver is also available as a certified operator in the OperatorHub catalog. You will use that method in this lab.
 
 [#operatorinstall]
 == Install the NetApp Trident Operator

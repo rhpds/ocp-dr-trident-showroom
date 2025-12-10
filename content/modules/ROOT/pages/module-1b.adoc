@@ -1,6 +1,6 @@
 === Authenticate to the cluster
 
-NOTE: You can refer back to this page if you need the login info
+NOTE: Refer back to this page if you need the login info
 
 The bastion provided with the workshop has the `aws` and `rosa` command line tools already installed and logged in.  The `oc` command is installed, but not authenticated.
 
@@ -8,7 +8,7 @@ To authenticate `oc` use this command for the DR environment:
 
 [.lines_space]
 [.console-input]
-[source,yaml,role=execute]
+[source,bash,role=execute,subs="attributes"]
 ----
 oc login -u {rosa_dr_openshift_admin_user} -p {rosa_dr_openshift_admin_password} {rosa_dr_openshift_console_url}
 ----
@@ -17,7 +17,7 @@ And use this command to login to the PROD environment:
 
 [.lines_space]
 [.console-input]
-[source,yaml,role=execute]
+[source,bash,role=execute,subs="attributes"]
 ----
 oc login -u {rosa_prod_openshift_admin_user} -p {rosa_prod_openshift_admin_password} {rosa_prod_openshift_console_url}
 ----

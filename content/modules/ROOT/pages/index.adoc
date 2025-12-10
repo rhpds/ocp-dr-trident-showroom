@@ -1,22 +1,29 @@
 = Hands-on Disaster Recovery of OpenShift containers and VMs with Trident protect
 
-This lab guide provides a walkthrough on using NetApp Trident Protect to enable a Disaster Recovery plan for both your VMs and your containers between two environments.
+== Introduction & Overview
+This lab provides a comprehensive, hands-on walkthrough demonstrating how to deploy and utilize NetApp Trident Protect to establish a robust Disaster Recovery plan for both Virtual Machines (VMs) and containerized applications across two distinct environments.
 
-You will go through the steps to install the NetApp Trident Container Storage Interface (CSI) driver on a ROSA cluster, as well as how to configure it to provision volumes on an FSx for NetApp ONTAP file system. You will then proceed with the installation of Trident Protect and its configuration to store data and metadata on an AWS S3 bucket.
+The lab is structured to reflect real-world roles:
 
-Finally, you will learn how to back up and restore a container-based application, as well as fail over a VM to a secondary ROSA cluster. This lab contains tasks that are handled by an OpenShift admin as well as activities typically performed by an OpenShift user. The different personas are noted throughout the lab guide.
+=== Admin Persona Tasks: 
+You will first install and configure the NetApp Trident Container Storage Interface (CSI) driver on the secondary ROSA cluster, provisioning volumes on an FSx for NetApp ONTAP file system. Following this, you will install Trident Protect and configure it to store application data and metadata backups in an AWS S3 bucket.
 
-NOTE: Both Trident and Trident Protect are already installed on the primary cluster. But you will go through the deployment process for both on the secondary cluster.
+=== User Persona Tasks: 
+Once the infrastructure is ready, you will proceed with the core VM Disaster Recovery workflow, learning how to provision, replicate, and fail over a VM running in OpenShift Virtualization to the secondary cluster.
 
-Here is your agenda for today:
+As a bonus section, you can learn the steps necessary to back up, restore, and fail over container-based applications to showcase the full range of Trident Protect capabilities.
+
+=== Here is your agenda:
 
 Introduction & Overview::
-  * Login details
-  * Lab Description
+  * Lab Description & Overview
+  * Lav Environment
+  * Login Details
+  
  
 Admin Persona: Configuration::
-  * Install and configure Trident in OpenShift (Secondary Cluster)
-  * Install and configure Trident Protect in OpenShift (Secondary Cluster)
+  * Install and configure Trident on OpenShift DR Cluster
+  * Install and configure Trident Protect on OpenShift DR Cluster
 
 User Persona: VM Operations::
   * Provision VMs in OpenShift Virtualization

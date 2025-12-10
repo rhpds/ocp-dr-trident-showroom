@@ -1,0 +1,44 @@
+[[LabEnvironment]]
+## Lab Environment
+
+The lab environment consists of the following components:
+
+=== Cluster and Networking Configuration
+
+* **OpenShift Clusters (ROSA):** Two Red Hat OpenShift Service on AWS (ROSA) clusters, named *prod* and *dr*, both running OpenShift 4.18.
+* **Networking (VPCs):** Each ROSA cluster resides in its own VPC within a single AWS account.
+** *prod* VPC CIDR: `10.0.0.0/16`
+** *dr* VPC CIDR: `10.10.0.0/16`
+* **VPC Peering:** A VPC peering connection is configured between both VPCs to allow replication traffic.
+* **Security:** Route tables and Security Groups are updated to allow replication traffic in both directions.
+
+=== Storage and Replication
+
+* **Storage:** Each VPC contains an **FSx for NetApp ONTAP** file system.
+* **Connectivity:** Security Groups are configured to allow connectivity between the ROSA cluster and its respective FSx file system.
+* **Storage Virtual Machine (SVM):** Inside each FSx file system, a dedicated SVM has been created for OpenShift use.
+* **Replication:** The replication technology used by Trident Protect is NetApp SnapMirror.
+* **SnapMirror** efficiently replicates delta snapshots asynchronously between the SVMs of the two FSx file systems.
+* **FSx** file systems and their respective SVMs are already peered to facilitate replication.
+
+
+=== Deployment Status & Tasks
+
+* **AWS S3 Bucket:** An S3 bucket is already created and used by Trident Protect as the destination for data and metadata backups.
+* **Prod Cluster Status:** Trident and Trident Protect are already installed and configured in the *prod* ROSA cluster.
+
+* **Your Deployment Tasks:**
+** Deploy and configure Trident in the *dr* ROSA cluster.
+** Deploy and configure Trident Protect in the *dr* ROSA cluster.
+
+=== Workload Overview
+
+You will perform the following VM replication:
+
+* **Source:** Provision a **CentOS 9 VM** in the `my-vm` namespace of the *prod* ROSA cluster.
+* **Target:** Replicate the VM to the `vmdr` namespace in the *dr* ROSA cluster, as reflected in the following diagram.
+
+[[DiagramOfTheLabEnvironment]]
+## Diagram of the Lab Environment
+
+image::Mod1_lab_diagram.png[Lab Environment Diagram, align="center"]
