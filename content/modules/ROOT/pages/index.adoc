@@ -18,8 +18,7 @@ As a bonus section, you can learn the steps necessary to back up, restore, and f
 Introduction & Overview::
   * Lab Description & Overview
   * Lav Environment
-  * Login Details
-  
+  * Accessing the Lab
  
 Admin Persona: Configuration::
   * Install and configure Trident on OpenShift DR Cluster

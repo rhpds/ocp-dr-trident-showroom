@@ -2,7 +2,7 @@
 * xref:index.adoc[Lab Agenda]
 * xref:module-00.adoc[Introduction & Overview]
 * xref:module-01a.adoc[Lab Environment]
-* xref:module-01b.adoc[Login Details]
+* xref:module-01b.adoc[Accessing the Lab]
 
 
 * xref:module-02.adoc[Install and configure Trident in OpenShift]

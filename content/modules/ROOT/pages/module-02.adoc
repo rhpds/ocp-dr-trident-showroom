@@ -15,40 +15,53 @@ Beginning with NetApp Trident 25.02, this CSI driver is also available as a cert
 [#operatorinstall]
 == Install the NetApp Trident Operator
 
-* Connect to the Red Hat OpenShift GUI on the *DR* cluster:
-** *URL*: {rosa_dr_openshift_console_url}[window=_blank] icon:external-link[]
-** *user*: `{rosa_dr_openshift_admin_user}`
-** *password*: `{rosa_dr_openshift_admin_password}`
-* In the *Operators* category, locate the *OperatorHub* sub-menu
-* Filter on `trident`
+Connect to the Red Hat OpenShift console on the *DR* cluster:
+
+[cols="1,2,1,1",options="header"]
+|===
+| Environment
+| URL
+| User
+| Password
+
+| *DR*
+| {rosa_dr_openshift_console_url}[window=_blank] icon:external-link[]
+| `{rosa_dr_openshift_admin_user}`
+| `{rosa_dr_openshift_admin_password}`
+|===
+
+
+
+In the *Operators* menu, locate the *OperatorHub* sub-menu and filter on *trident*
 
 image::Mod2_OCP_Console_OperatorHub_Trident.png[OperatorHub]
 
-* Find the Trident box that has the *Certified* badge on the top right and click on it to enter the Installer window.
+Locate the Trident box that has the *Certified* badge on the top right and click on it to enter the Installer window.
 
 image::Mod2_OCP_Console_OperatorHub_Trident_Install.png[Installer]
 
-* Make sure you are on the most recent version (25.2.1 in the screenshot) and press on the *Install* button which will open the configuration page.
+Make sure you are on the most recent version (25.2.1 in the screenshot) and press on the *Install* button which will open the configuration page.
+
 Leave all the parameters as they are and press *Install*
 
 image::Mod2_OCP_Console_OperatorHub_Trident_Install2.png[Configuration]
 
-* The installation is fairly quick.
+The installation is fairly quick.
 Wait until the installation is complete.
 In less than 2 minutes, the Operator will be ready to use.
 
 image::Mod2_OCP_Console_OperatorHub_Trident_Installed.png[TridentInstalled]
 
-* After pressing on the *View Operator* button, you will enter the _details_ page of Trident.
+After pressing on the *View Operator* button, you will enter the *details* page of Trident.
 
 image::Mod2_OCP_Console_OperatorHub_Trident_Details.png[TridentDetails]
 
-* Find the *Trident Orchestrator* box and click on the *Create instance* link within it.
+Locate the *Trident Orchestrator* box and click on the *Create instance* link within it.
 Creating an instance of the Trident orchestrator will open a new form
 
 image::Mod2_OCP_Console_OperatorHub_TORC_form.png[TridentDetails]
 
-* Switch to *YAML view*, remove the pre-filled YAML manifest and paste the following and press on *Create*
+Switch to *YAML view*, remove the pre-filled YAML manifest and paste the following and press on *Create*
 
 [.lines_space]
 [.console-input]
@@ -77,7 +90,7 @@ spec:
 * This is achieved by adding the `nodePrep` parameter
 ====
 
-* Observe the Status column.
+Observe the Status column.
 After a couple of minutes, the Trident Orchestrator will be fully installed
 
 image::Mod2_OCP_Console_OperatorHub_TORC_installed.png[TridentDetails]
@@ -86,23 +99,22 @@ image::Mod2_OCP_Console_OperatorHub_TORC_installed.png[TridentDetails]
 
 In this section we will go through the following steps:
 
-* Connect to the jumphost
+* Connect to the bastion
 * Log in to OpenShift CLI
 * Retrieve and verify the Trident version.
 
-=== Authenticate `oc` to the cluster
+=== Change context to the DR cluster
 
-The bastion provided with the RHDP workshop has the `aws` and `rosa` command line tools already installed and logged in.
-The `oc` command is installed, but not authenticated.
-
-To authenticate `oc` use the API URL, username, and password provided by the RHDP lab deployment.
+Make sure you are on the DR cluster
 
 [.lines_space]
 [.console-input]
-[source,bash,role=execute,subs="attributes"]
+[source,bash,role=execute]
 ----
-oc login -u {rosa_dr_openshift_admin_user} -p {rosa_dr_openshift_admin_password} {rosa_dr_openshift_api_url}
+oc config use-context DR
 ----
+
+
 
 [#tridentinstalled]
 === Check the Trident version
@@ -582,12 +594,22 @@ Instead you now see volume snapshots that were created against the Trident class
 Any subsequent VM creation from these templates/snapshots will now use NetApp cloning technology to give you extremely fast and efficient provisioning of VM disks.
 
 This optimization configuration also needs to be applied to the production environment. +
-You will also first need to log into that PROD cluster.
+
+Switch to the PROD clubster. 
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config use-context PROD
+----
+
+Apply this command
+
 [.lines_space]
 [.console-input]
 [source,bash,role=execute,subs="attributes"]
 ----
-oc login -u {rosa_prod_openshift_admin_user} -p {rosa_prod_openshift_admin_password} {rosa_prod_openshift_api_url}
 oc delete dv,volumesnapshot -n openshift-virtualization-os-images --selector=cdi.kubevirt.io/dataImportCron
 ----
 
@@ -597,5 +619,4 @@ Time to deploy workloads!
 
 In the next chapter, you will see the benefit of the configuration you just ran.
 
-You are now done with this module.
 Please proceed with the next one.

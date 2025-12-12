@@ -1,26 +1,28 @@
-=== Authenticate to the cluster
+=== Accessing the Lab
 
 NOTE: Refer back to this page if you need the login info
 
 The bastion provided with the workshop has the `aws` and `rosa` command line tools already installed and logged in.  The `oc` command is installed, but not authenticated.
 
-To authenticate `oc` use this command for the DR environment:
+Use this command to login to the PROD environment:
 
 [.lines_space]
 [.console-input]
 [source,bash,role=execute,subs="attributes"]
 ----
-oc login -u {rosa_dr_openshift_admin_user} -p {rosa_dr_openshift_admin_password} {rosa_dr_openshift_console_url}
+oc login -u {rosa_prod_openshift_admin_user} -p {rosa_prod_openshift_admin_password} {rosa_prod_openshift_api_url}
 ----
 
-And use this command to login to the PROD environment:
+Use this command for the DR environment:
 
 [.lines_space]
 [.console-input]
 [source,bash,role=execute,subs="attributes"]
 ----
-oc login -u {rosa_prod_openshift_admin_user} -p {rosa_prod_openshift_admin_password} {rosa_prod_openshift_console_url}
+oc login -u {rosa_dr_openshift_admin_user} -p {rosa_dr_openshift_admin_password} {rosa_dr_openshift_api_url}
 ----
+
+
 
 == OpenShift context management
 
@@ -45,16 +47,19 @@ Let's quickly check this was succesfully applied:
 ----
 oc config get-contexts
 ----
+
 [.console-output]
 [source,bash]
 ----
 CURRENT   NAME   CLUSTER                                         AUTHINFO                                                      NAMESPACE
-          DR     api-dr-p4p6h-t9k7-p1-openshiftapps-com:6443     cluster-admin/api-dr-p4p6h-t9k7-p1-openshiftapps-com:6443     default
-*         PROD   api-prod-p4p6h-jtx8-p1-openshiftapps-com:6443   cluster-admin/api-prod-p4p6h-jtx8-p1-openshiftapps-com:6443   default
+*          DR     api-dr-p4p6h-t9k7-p1-openshiftapps-com:6443     cluster-admin/api-dr-p4p6h-t9k7-p1-openshiftapps-com:6443     default
+         PROD   api-prod-p4p6h-jtx8-p1-openshiftapps-com:6443   cluster-admin/api-prod-p4p6h-jtx8-p1-openshiftapps-com:6443   default
 ----
 
-You should already be logged into the PROD environment, as indicated by the `*` in the first column of the output. +
-In case you need to switch back to it, here is the command to run:
+You should alrady be logged into the DR environment, as indicated by the `*` in the first column of the output. +
+
+To swtich contexts, use the following command with the DR or PROD context name.
+
 [.lines_space]
 [.console-input]
 [source,bash,role=execute]
@@ -62,16 +67,82 @@ In case you need to switch back to it, here is the command to run:
 oc config use-context PROD
 ----
 
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config use-context DR
+----
+
+NOTE: You will need to be in the DR context for the next part of the lab.
+
 == OpenShift Console Login
 
-To connct top the *PROD* OpenShift console:
+[cols="1,2,1,1",options="header"]
+|===
+| Environment
+| URL
+| User
+| Password
 
-** *URL*: {rosa_prod_openshift_console_url}[window=_blank] icon:external-link[]
-** *user*: `{rosa_prod_openshift_admin_user}`
-** *password*: `{rosa_prod_openshift_admin_password}`
+| *PROD*
+| {rosa_prod_openshift_console_url}[window=_blank] icon:external-link[]
+| `{rosa_prod_openshift_admin_user}`
+| `{rosa_prod_openshift_admin_password}`
 
-To connect to the *DR* OpenShift console:
+| *DR*
+| {rosa_dr_openshift_console_url}[window=_blank] icon:external-link[]
+| `{rosa_dr_openshift_admin_user}`
+| `{rosa_dr_openshift_admin_password}`
+|===
 
-** *URL*: {rosa_dr_openshift_console_url}[window=_blank] icon:external-link[]
-** *user*: `{rosa_dr_openshift_admin_user}`
-** *password*: `{rosa_dr_openshift_admin_password}`
+
+
+== Terminal Management
+
+As this lab environment is restricted to a single terminal, it is recommended to use the terminal multiplexer, `tmux`.
+
+`tmux` is already installed and allows you to create and manage multiple, switchable terminal sessions, all within a single active window.
+If the connection to the lab environment is interrupted, the session remains active, allowing you to reconnect and resume work.
+
+You can run `tmux` at any time from the command line
+
+=== Cheat Sheet
+
+All `tmux` commands start with the `Ctrl+b` prefix key sequence, followed by the command key.
+
+[cols="1,1,2",options="header"]
+|===
+| Action
+| Command (Prefix + Key)
+| Purpose
+
+| *Create New Window*
+| `Ctrl+b`, then `c`
+| Creates a new terminal tab (window) within your session.
+
+| *Switch to Next Window*
+| `Ctrl+b`, then `n`
+| Moves to the next window/tab (e.g., from tab 0 to tab 1).
+
+| *Switch to Previous Window*
+| `Ctrl+b`, then `p`
+| Moves back to the previous window/tab.
+
+| *Switch by Number*
+| `Ctrl+b`, then `0-9`
+| Jumps directly to the window number (0 is the first window).
+
+| *List Windows*
+| `Ctrl+b`, then `w`
+| Shows a full, selectable list of all windows in the current session.
+
+| *Detach Session*
+| `Ctrl+b`, then `d`
+| Closes the terminal window but keeps the session running in the background.
+
+| *Re-attach Session*
+| `tmux attach` (from CLI)
+| Reconnects to the last active background session after a disconnect.
+|===
