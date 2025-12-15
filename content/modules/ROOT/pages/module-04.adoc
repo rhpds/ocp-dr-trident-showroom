@@ -135,7 +135,24 @@ The CR that represent that bucket is called an *_AppVault_*. +
 The admin could create an AppVault used by all possible applications, or create specific ones per application (in which case you would have multiple buckets). +
 As we have only one bucket available, let's create a single AppVault.
 
-You first need to create two secrets:
+Make sure you can see the target S3 bucket.
+It is in the PROD AWS account, but is also readable by the DR AWS account.
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute,subs="attributes"]
+----
+aws s3 ls --profile=prod
+----
+
+[.console-output]
+[source,bash]
+----
+2025-12-15 15:39:06 2n6tlotbhmn5s2sokqqh5mtciecotrp5-image-registry-us-east-1-pbsu
+2025-12-15 15:54:16 bucket-rkzkg-2
+----
+
+To create the AppVault, you first need to create two secrets:
 
 * one to host the bucket keys
 * one to host a password for the repository encryption
