@@ -1,8 +1,8 @@
 
-* xref:index.adoc[Lab Agenda]
-* xref:module-00.adoc[Introduction & Overview]
-* xref:module-01a.adoc[Lab Environment]
-* xref:module-01b.adoc[Accessing the Lab]
+* xref:index.adoc[Lab Overview]
+** xref:module-00.adoc[Introduction]
+** xref:module-01a.adoc[Lab Environment]
+** xref:module-01b.adoc[Accessing the Lab]
 
 
 * xref:module-02.adoc[Install and configure Trident in OpenShift]
@@ -12,6 +12,7 @@
 ** xref:module-02.adoc#storageclasses[Configure Storage Classes]
 ** xref:module-02.adoc#vsclass[Configure Volume Snapshot Class]
 ** xref:module-02.adoc#optimization[Virtual Machine image volume optimization]
+
 
 // * xref:module-03.adoc[Provision workloads]
 // ** xref:module-03.adoc#deploywordpress[Install Wordpress with Helm]

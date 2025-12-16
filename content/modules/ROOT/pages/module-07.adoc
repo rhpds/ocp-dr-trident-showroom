@@ -124,7 +124,7 @@ You have quickly demonstrated how to restore a VM from a snapshot in just a few 
 [#vmadd]
 == Replicate a second VM
 
-In this chapter, you are going to perform 2 tasks:
+In this exercise, you are going to perform 2 tasks:
 
 * Add a new VM to existing *my-vm* project
 * Failover the Trident Protect app
@@ -135,8 +135,8 @@ The goal is to showcase that since the app is defined at the namespace level, an
 
 First, make sure you are connected to the PROD cluster console, in the *my-vm* project. Then you can:
 
-* either create a whole new Centos9 VM, following the same steps used in Module 3
-* or clone the existing VM which also would take a couple of minutes to complete
+* Either create a whole new Centos9 VM, following the same steps earlier
+* Or clone the existing VM which also would take a couple of minutes to complete
 
 [NOTE]
 ====

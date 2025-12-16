@@ -1,6 +1,5 @@
 = Hands-on Disaster Recovery of OpenShift containers and VMs with Trident protect
 
-== Introduction & Overview
 This lab provides a comprehensive, hands-on walkthrough demonstrating how to deploy and utilize NetApp Trident Protect to establish a robust Disaster Recovery plan for both Virtual Machines (VMs) and containerized applications across two distinct environments.
 
 The lab is structured to reflect real-world roles:
@@ -16,7 +15,7 @@ As a bonus section, you can learn the steps necessary to back up, restore, and f
 === Here is your agenda:
 
 Introduction & Overview::
-  * Lab Description & Overview
+  * Trident & Trident Protect Intoduction
   * Lav Environment
   * Accessing the Lab
  

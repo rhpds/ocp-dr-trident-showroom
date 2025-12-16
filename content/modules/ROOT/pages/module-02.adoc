@@ -402,7 +402,7 @@ storage-class-nfs         csi.trident.netapp.io   Delete          Immediate     
 === Create an iSCSI Storage Class
 
 This will be done with the OpenShift Console. +
-Once connected to the GUI, navigate to the *Storage* menu and *StorageClasses* sub-menu. +
+Connect to the WEB UI of the DR Cluster and navigate to the *Storage* menu and *StorageClasses* sub-menu. +
 
 You can easily create a new one by pressing on the *Create StorageClass* button at the top right of the screen. +
 Once on this page, switch to edit mode by clicking on the *Edit YAML* link.

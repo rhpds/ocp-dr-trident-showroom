@@ -1,7 +1,6 @@
-= NetApp Data Protection Lab Overview
-
-[[IntroductionOverview]]
-## Introduction & Overview
+= Introducing Trident and Trident Protect
+[[Introduction]]
+## Introduction
 
 While the persistent storage challenge has been effectively addressed by the CSI standard (Container Storage Interface), data protection introduces new complexities to overcome, especially when application consistency is required. With the growing demand to host VMs on container platforms, the protection of these workloads becomes essential.
 
