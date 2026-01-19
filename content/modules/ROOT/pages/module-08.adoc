@@ -42,7 +42,16 @@ Enough reading for now, let's protect WordPress!
 [#deploywordpress]
 == Deploy the Wordpress Helm chart
 
-This is going to be done using the cli.
+This is going to be done using the cli and in the PROD cluster.
+
+Switch to the PROD cluster. 
+
+[.lines_space]
+[.console-input]
+[source,bash,role=execute]
+----
+oc config use-context PROD
+----
 
 === Wordpress installation
 
