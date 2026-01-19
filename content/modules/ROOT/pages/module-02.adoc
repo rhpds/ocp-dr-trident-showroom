@@ -595,7 +595,7 @@ Any subsequent VM creation from these templates/snapshots will now use NetApp cl
 
 This optimization configuration also needs to be applied to the production environment. +
 
-Switch to the PROD clubster. 
+Switch to the PROD cluster. 
 
 [.lines_space]
 [.console-input]
@@ -604,7 +604,7 @@ Switch to the PROD clubster.
 oc config use-context PROD
 ----
 
-Apply this command
+Apply this command:
 
 [.lines_space]
 [.console-input]
