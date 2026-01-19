@@ -44,6 +44,7 @@ The binary _tridenctl-protect_ is also helpful to interact with Trident Protect.
 ----
 curl -L -o tridentctl-protect https://github.com/NetApp/tridentctl-protect/releases/download/{ocp_dr_trident_cli_version}/tridentctl-protect-linux-amd64
 chmod +x tridentctl-protect
+mkdir /home/rosa/bin
 mv ./tridentctl-protect /home/rosa/bin/
 ----
 
