@@ -55,15 +55,15 @@ Let's deploy it on the production cluster with the help of a Helm chart.
 ----
 helm repo add bitnami https://charts.bitnami.com/bitnami
 
-helm install wordpress bitnami/wordpress -n wordpress --create-namespace
---set wordpressUsername=rosa
---set wordpressPassword=Rosa12345
---set global.storageClass=storage-class-nfs
---set wordpressBlogName="Best Blog Ever"
---set image.registry=docker.io
---set image.repository=bitnamilegacy/wordpress
---set mariadb.image.registry=docker.io
---set mariadb.image.repository=bitnamilegacy/mariadb
+helm install wordpress bitnami/wordpress -n wordpress --create-namespace \
+--set wordpressUsername=rosa \
+--set wordpressPassword=Rosa12345 \
+--set global.storageClass=storage-class-nfs \
+--set wordpressBlogName="Best Blog Ever" \
+--set image.registry=docker.io \
+--set image.repository=bitnamilegacy/wordpress \
+--set mariadb.image.registry=docker.io \
+--set mariadb.image.repository=bitnamilegacy/mariadb \
 --set global.security.allowInsecureImages=true
 ----
 
