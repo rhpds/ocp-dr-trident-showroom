@@ -1,6 +1,6 @@
 ---
 site:
-  title: Hands-on Disaster Recovery of OpenShift containers and VMs with Trident Protect
+  title: Experience Disaster Recovery of Red Hat OpenShift Virtualization with NetApp Trident Protect
   start_page: modules::index.adoc
 
 content:
